@@ -1,3 +1,24 @@
+# -*- encoding: utf-8 -*-
+# Copyright (c) 2023, Neat Digital
+# All rights reserved.
+#
+# This file is part of Gryffen.
+# See https://neat.tw for further info.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+from datetime import date, datetime
+
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
@@ -33,3 +54,9 @@ async def drop_database() -> None:
     engine = create_async_engine(str(settings.db_url.with_path("/mysql")))
     async with engine.connect() as conn:
         await conn.execute(text(f"DROP DATABASE {settings.db_base};"))
+
+
+async def serializer(obj):
+    if isinstance(obj, (datetime, date)):
+        return obj.isoformat()
+    raise TypeError(f"Type {type(obj)} is not serializable")

@@ -1,11 +1,33 @@
+# -*- encoding: utf-8 -*-
+# Copyright (c) 2023, Neat Digital
+# All rights reserved.
+#
+# This file is part of Gryffen.
+# See https://neat.tw for further info.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import enum
+import os
 from pathlib import Path
 from tempfile import gettempdir
 
+from dotenv import load_dotenv
 from pydantic import BaseSettings
 from yarl import URL
 
 TEMP_DIR = Path(gettempdir())
+load_dotenv()
 
 
 class LogLevel(str, enum.Enum):  # noqa: WPS600
@@ -39,13 +61,24 @@ class Settings(BaseSettings):
 
     log_level: LogLevel = LogLevel.INFO
 
+    gryffen_security_key = os.getenv("GRYFFEN_SECRET_KEY")
+    hashing_iteration = os.getenv("HASH_ITERATION")
+
+    # Access token
+    access_token_hash_algorithm = os.getenv("ACCESS_TOKEN_HASH_ALGO")
+    access_token_duration_minute = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
+
     # Variables for the database
-    db_host: str = "localhost"
-    db_port: int = 3306
-    db_user: str = "gryffen"
-    db_pass: str = "gryffen"
-    db_base: str = "gryffen"
+    db_host: str = os.getenv("DB_HOST")
+    db_port: int = os.getenv("DB_PORT")
+    db_user: str = os.getenv("DB_USER")
+    db_pass: str = os.getenv("DB_PASS")
+    db_base: str = os.getenv("DB_NAME")
     db_echo: bool = False
+
+    # Finnhub
+    finnhub_ws_endpoint = os.getenv("FINNHUB_WEBSOCKET_URI")
+    finnhub_api_key = os.getenv("FINNHUB_API_KEY")
 
     @property
     def db_url(self) -> URL:

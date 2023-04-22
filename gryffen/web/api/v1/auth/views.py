@@ -17,4 +17,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""gryffen package."""
+"""
+This script is used to create API routers for authentication-related actions.
+
+Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
+Date: 22/04/2023
+"""
+from fastapi import APIRouter
+
+router = APIRouter()

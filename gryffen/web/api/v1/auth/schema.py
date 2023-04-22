@@ -17,10 +17,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import List
+
 from pydantic import BaseModel
 
+from gryffen.web.api.utils import is_valid_email
 
-class Message(BaseModel):
-    """Simple message model."""
 
-    message: str
+class UserRegisterMessage(BaseModel):
+
+    username: str
+    password: str
+    email: str
+    errors: List = []
+
+    async def is_valid(self):
+        if not self.username or not len(self.username) > 3:
+            self.errors.append("Username should have at least 4 characters.")
+        if not self.email or not is_valid_email(self.email):
+            self.errors.append("Please enter a valid email address.")
+        if not self.password or not len(self.password) >= 4:
+            self.errors.append("Password must be > 4 chars")
+
+        if not self.errors:
+            return True
+        return False

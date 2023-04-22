@@ -17,4 +17,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""gryffen package."""
+from gryffen.web.api.v1.auth.views import router
+
+__all__ = ["router"]

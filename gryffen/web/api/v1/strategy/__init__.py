@@ -17,4 +17,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""gryffen package."""
+"""
+This script is the initialization of the strategy router.
+
+Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
+Date: 22/04/2023
+"""
+from gryffen.web.api.v1.strategy.views import router
+
+__all__ = ["router"]

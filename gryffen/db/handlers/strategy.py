@@ -17,4 +17,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""gryffen package."""
+"""
+This script is used to create DB handler functions for strategy-related actions.
+
+Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
+Date: 22/04/2023
+"""
