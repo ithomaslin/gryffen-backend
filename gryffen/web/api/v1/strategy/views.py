@@ -23,6 +23,58 @@ This script is used to create API routers for strategy-related actions.
 Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
 Date: 22/04/2023
 """
-from fastapi import APIRouter
+
+from fastapi import APIRouter, Depends
+from typing import Dict, Any
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from gryffen.db.dependencies import get_db_session
+from gryffen.db.models.strategies import Strategy
+from gryffen.db.handlers.strategy import (
+    get_strategies_by_token,
+    create_strategy,
+)
+from gryffen.web.api.v1.strategy.schema import StrategyCreationSchema
+from gryffen.security import decode_access_token
 
 router = APIRouter(prefix="/strategy")
+
+
+@router.get("/")
+async def get(
+    current_user: Dict[str, Any] = Depends(decode_access_token),
+    db: AsyncSession = Depends(get_db_session),
+):
+    """
+    API endpoint: fetch all strategies of a given user by access token.
+
+    @param current_user:
+    @param db:
+    @return:
+    """
+    strategies: Strategy = await get_strategies_by_token(current_user, db)
+    return {"strategies": strategies}
+
+
+@router.post("/create")
+async def create(
+    request: StrategyCreationSchema,
+    current_user: Dict[str, Any] = Depends(decode_access_token),
+    db: AsyncSession = Depends(get_db_session),
+):
+    """
+
+    @param request:
+    @param current_user:
+    @param db:
+    @return:
+    """
+    strategy = await create_strategy(
+        user_id=current_user.get("id"),
+        submission=request,
+        db=db,
+    )
+    return {
+        "info": "success",
+        "strategy": strategy,
+    }

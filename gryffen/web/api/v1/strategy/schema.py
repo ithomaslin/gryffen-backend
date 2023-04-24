@@ -16,3 +16,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""
+This script is used to define strategy data object schema.
+
+Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
+Date: 22/04/2023
+"""
+
+from pydantic import BaseModel
+
+
+class StrategyCreationSchema(BaseModel):
+
+    symbol: str
+    upper_bound: int
+    lower_bound: int
+    grid_count: int
+    grid_size: int
+    grid_type: str
+    principal_balance: int
+    max_drawdown: int

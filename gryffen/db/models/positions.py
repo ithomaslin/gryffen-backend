@@ -18,32 +18,32 @@
 # limitations under the License.
 
 """
-This script is used to create the date model for position.
+This script is used to define the DB model for position.
 
 Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
 Date: 22/04/2023
 """
+
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from gryffen.db.base import Base
-from gryffen.db.models.users import User
 
 
 class Position(Base):
 
     __tablename__ = "position"
 
-    id: Mapped[int] = Column(Integer, primary_key=True, index=True)
-    symbol: Mapped[str] = Column(String(50), nullable=False)
-    entry_price: Mapped[int] = Column(Integer, nullable=False)
-    volume: Mapped[int] = Column(Integer, nullable=False)
-    realized_profit: Mapped[int] = Column(Integer, default=0, nullable=False)
-    is_finalized: Mapped[bool] = Column(Boolean(), default=False)
-    timestamp_created: Mapped[datetime] = Column(DateTime)
-    timestamp_updated: Mapped[datetime] = Column(DateTime)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    symbol: Mapped[str] = mapped_column(String(50), nullable=False)
+    entry_price: Mapped[int] = mapped_column(Integer, nullable=False)
+    volume: Mapped[int] = mapped_column(Integer, nullable=False)
+    realized_profit: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    is_finalized: Mapped[bool] = mapped_column(Boolean(), default=False)
+    timestamp_created: Mapped[datetime] = mapped_column(DateTime)
+    timestamp_updated: Mapped[datetime] = mapped_column(DateTime)
 
     owner_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
     owner: Mapped["User"] = relationship("User", back_populates="positions")

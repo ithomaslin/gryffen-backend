@@ -23,6 +23,7 @@ This script is used as the root router of the Gryffen API.
 Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
 Date: 22/04/2023
 """
+
 from fastapi.routing import APIRouter
 
 from gryffen.web.api import docs, echo, monitoring

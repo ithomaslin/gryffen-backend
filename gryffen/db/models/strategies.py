@@ -18,32 +18,35 @@
 # limitations under the License.
 
 """
-This script is used to create data model for strategy.
+This script is used to define the DB model for strategy.
 
 Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
 Date: 22/04/2023
 """
-from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
-from sqlalchemy.orm import mapped_column, relationship
+from datetime import datetime
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from gryffen.db.base import Base
-from gryffen.db.models.users import User
 
 
 class Strategy(Base):
 
     __tablename__ = "strategy"
 
-    id: int = Column(Integer, primary_key=True, index=True)
-    upper_bound: int = mapped_column(Integer)
-    lower_bound: int = mapped_column(Integer)
-    grid_size: int = mapped_column(Integer)
-    grid_type: str = mapped_column(String(50))
-    is_active: bool = Column(Boolean(), default=True)
-    timestamp_created: datetime = Column(DateTime)
-    timestamp_updated: datetime = Column(DateTime)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    symbol: Mapped[str] = mapped_column(String(50))
+    upper_bound: Mapped[int] = mapped_column(Integer)
+    lower_bound: Mapped[int] = mapped_column(Integer)
+    grid_count: Mapped[int] = mapped_column(Integer)
+    grid_size: Mapped[int] = mapped_column(Integer)
+    grid_type: Mapped[str] = mapped_column(String(50))
+    principal_balance: Mapped[int] = mapped_column(Integer)
+    max_drawdown: Mapped[int] = mapped_column(Integer)
+    is_active: Mapped[bool] = mapped_column(Boolean(), default=True)
+    timestamp_created: Mapped[datetime] = mapped_column(DateTime)
+    timestamp_updated: Mapped[datetime] = mapped_column(DateTime)
 
-    owner_id: int = mapped_column(ForeignKey("user.id"))
-    owner: User = relationship(back_populates="strategies")
+    owner_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
+    owner: Mapped["User"] = relationship(back_populates="strategies")

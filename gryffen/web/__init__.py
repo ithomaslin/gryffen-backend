@@ -17,4 +17,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""WEB API for gryffen."""
+"""
+Gryffen WEB API initializer.
+
+Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
+Date: 22/04/2023
+"""

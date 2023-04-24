@@ -17,20 +17,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+Gryffen web API main entry point.
+
+Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
+Date: 22/04/2023
+"""
+
 from importlib import metadata
 from pathlib import Path
-
 from fastapi import FastAPI
 from fastapi.responses import UJSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from gryffen.core.stream.finnhub import FinnhubListener
 from gryffen.logging import configure_logging
 from gryffen.web.api.router import api_router
 from gryffen.web.lifetime import register_shutdown_event, register_startup_event
 
 APP_ROOT = Path(__file__).parent.parent
-global_listener = FinnhubListener()
 
 
 def get_app() -> FastAPI:
@@ -50,11 +54,6 @@ def get_app() -> FastAPI:
         openapi_url="/api/openapi.json",
         default_response_class=UJSONResponse,
     )
-
-    # @app.on_event("startup")
-    # async def start_listener():
-    #     conn = f'{settings.finnhub_ws_endpoint}?token={settings.finnhub_api_key}'
-    #     await global_listener.start_listening(conn=conn)
 
     # Adds startup and shutdown events.
     register_startup_event(app)

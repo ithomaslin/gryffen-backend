@@ -9,11 +9,6 @@ repos:
   - id: check-toml
   - id: end-of-file-fixer
 
-- repo: https://github.com/asottile/add-trailing-comma
-  rev: v2.1.0
-  hooks:
-  - id: add-trailing-comma
-
 - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
   rev: v2.1.0
   hooks:
@@ -22,18 +17,3 @@ repos:
     - --autofix
     - --preserve-quotes
     - --indent=2
-
-- repo: local
-  hooks:
-  - id: black
-    name: Format with Black
-    entry: poetry run black
-    language: system
-    types: [python]
-
-  - id: autoflake
-    name: autoflake
-    entry: poetry run autoflake
-    language: system
-    types: [python]
-    args: [--in-place, --remove-all-unused-imports, --remove-duplicate-keys]

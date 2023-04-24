@@ -17,6 +17,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+This script is used to define the base for all DB models.
+
+Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
+Date: 22/04/2023
+"""
+
 from sqlalchemy.orm import DeclarativeBase
 
 from gryffen.db.meta import meta

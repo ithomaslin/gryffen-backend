@@ -17,6 +17,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+This script is used to define the DB metadata.
+
+Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
+Date: 22/04/2023
+"""
+
 import sqlalchemy as sa
 
 meta = sa.MetaData()

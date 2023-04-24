@@ -17,11 +17,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+This script is used to define the DB model for user.
+
+Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
+Date: 22/04/2023
+"""
+
 from datetime import datetime
 from typing import List
 
-from sqlalchemy import Boolean, Column, DateTime, Integer, String
-from sqlalchemy.orm import Mapped, relationship
+from sqlalchemy import Boolean, DateTime, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from gryffen.db.base import Base
 from gryffen.db.models.positions import Position
@@ -33,23 +40,23 @@ class User(Base):
 
     __tablename__ = "user"
 
-    id: Mapped[int] = Column(Integer, primary_key=True, index=True)
-    public_id: Mapped[str] = Column(String(50), unique=True)
-    username: Mapped[str] = Column(String(50), unique=True, nullable=False)
-    email: Mapped[str] = Column(String(100), unique=True, nullable=False)
-    password: Mapped[str] = Column(String(100), nullable=False)
-    access_token: Mapped[str] = Column(String(1024), default=None)
-    is_active: Mapped[bool] = Column(Boolean(), default=False)
-    is_superuser: Mapped[bool] = Column(Boolean(), default=False)
-    timestamp_created: Mapped[datetime] = Column(DateTime)
-    timestamp_updated: Mapped[datetime] = Column(DateTime)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    public_id: Mapped[str] = mapped_column(String(50), unique=True)
+    username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    email: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    password: Mapped[str] = mapped_column(String(100), nullable=False)
+    access_token: Mapped[str] = mapped_column(String(1024), nullable=True, default=None)
+    is_active: Mapped[bool] = mapped_column(Boolean(), default=False)
+    is_superuser: Mapped[bool] = mapped_column(Boolean(), default=False)
+    timestamp_created: Mapped[datetime] = mapped_column(DateTime)
+    timestamp_updated: Mapped[datetime] = mapped_column(DateTime)
 
-    positions: Mapped[List[Position]] = relationship(
+    positions: Mapped[List["Position"]] = relationship(
         "Position",
         back_populates="owner",
         cascade="all, delete-orphan",
     )
-    strategies: Mapped[List[Strategy]] = relationship(
+    strategies: Mapped[List["Strategy"]] = relationship(
         "Strategy",
         back_populates="owner",
         cascade="all, delete-orphan",

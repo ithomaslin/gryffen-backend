@@ -23,8 +23,8 @@ This script is used to create API routers for user-related actions.
 Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
 Date: 22/04/2023
 """
-from typing import Any, Dict
 
+from typing import Any, Dict
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -67,42 +67,42 @@ async def register(
 
 @router.get("/")
 async def get_user(
-    decoded: Dict[Any, Any] = Depends(decode_access_token),
+    current_user: Dict[str, Any] = Depends(decode_access_token),
     db: AsyncSession = Depends(get_db_session),
 ):
     """
     API endpoint: fetch user info.
 
-    @param decoded:
+    @param current_user:
     @param db:
     @return:
     """
-    user: User = await get_user_by_token(decoded, db)
+    user: User = await get_user_by_token(current_user, db)
     return {"user": user}
 
 
-@router.post("/activate/{public_id}")
+@router.get("/activate/{public_id}")
 async def activate(
     public_id: str,
-    decoded: Dict = Depends(decode_access_token),
     db: AsyncSession = Depends(get_db_session),
 ):
     """
     API endpoint: activate a given user by access token.
 
     @param public_id:
-    @param decoded:
     @param db:
     @return:
     """
-    result = await activate_user(decoded, public_id, db)
-    return {"success": result}
+    result = await activate_user(public_id, db)
+    return {
+        "success": result,
+    }
 
 
 @router.post("/promote/{public_id}")
 async def promote(
     public_id: str,
-    decoded: dict = Depends(decode_access_token),
+    current_user: Dict[str, Any] = Depends(decode_access_token),
     db: AsyncSession = Depends(get_db_session),
 ):
     """
@@ -110,9 +110,9 @@ async def promote(
     by access token.
 
     @param public_id:
-    @param decoded:
+    @param current_user:
     @param db:
     @return:
     """
-    result = await promote_user(decoded, public_id, db)
+    result = await promote_user(current_user, public_id, db)
     return {"success": result}

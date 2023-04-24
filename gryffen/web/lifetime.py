@@ -17,8 +17,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Awaitable, Callable
+"""
+Web API lifetime functions.
 
+Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
+Date: 22/04/2023
+"""
+
+from typing import Awaitable, Callable
 from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
@@ -33,7 +39,7 @@ def _setup_db(app: FastAPI) -> None:  # pragma: no cover
     session_factory for creating sessions
     and stores them in the application's state property.
 
-    :param app: fastAPI application.
+    @param app: fastAPI application.
     """
     engine = create_async_engine(str(settings.db_url), echo=settings.db_echo)
     session_factory = async_sessionmaker(
@@ -53,7 +59,7 @@ def register_startup_event(
     This function uses fastAPI app to store data
     in the state, such as db_engine.
 
-    :param app: the fastAPI application.
+    @param app: the fastAPI application.
     :return: function that actually performs actions.
     """
 
@@ -71,8 +77,8 @@ def register_shutdown_event(
     """
     Actions to run on application's shutdown.
 
-    :param app: fastAPI application.
-    :return: function that actually performs actions.
+    @param app: fastAPI application.
+    @return: function that actually performs actions.
     """
 
     @app.on_event("shutdown")

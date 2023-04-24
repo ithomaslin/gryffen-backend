@@ -17,12 +17,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+This script is for all Gryffen security methods.
+
+Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
+Date: 22/04/2023
+"""
+
 import binascii
 import hashlib
 import os
 import time
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, Dict, Any
 
 import jwt
 from fastapi import Depends, HTTPException, status
@@ -47,10 +54,10 @@ def hashing(password: str) -> hashlib.sha256:
     return salt + password_hash
 
 
-def create_access_token(data: dict, expire_delta: Optional[timedelta] = None):
+def create_access_token(data: Dict, expire_delta: Optional[timedelta] = None) -> str:
     """
 
-    @param data: {"username": "<USERNAME>"}
+    @param data: {"id": "<USER_ID>", "username": "<USERNAME>", "email":"<EMAIL>"}
     @param expire_delta:
     @return:
     """
@@ -70,7 +77,7 @@ def create_access_token(data: dict, expire_delta: Optional[timedelta] = None):
     return encoded_jwt
 
 
-def decode_access_token(token: str = Depends(oauth2_scheme)):
+def decode_access_token(token: str = Depends(oauth2_scheme)) -> Dict[str, Any]:
     credential_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Credential invalid, make sure you have the valid credential.",
