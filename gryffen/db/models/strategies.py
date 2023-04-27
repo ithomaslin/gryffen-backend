@@ -36,6 +36,7 @@ class Strategy(Base):
     __tablename__ = "strategy"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    strategy_type: Mapped[int] = mapped_column(Integer)
     symbol: Mapped[str] = mapped_column(String(50))
     upper_bound: Mapped[int] = mapped_column(Integer)
     lower_bound: Mapped[int] = mapped_column(Integer)
@@ -50,3 +51,6 @@ class Strategy(Base):
 
     owner_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
     owner: Mapped["User"] = relationship(back_populates="strategies")
+
+    def __repr__(self):
+        return f'Strategy {self.id} - {self.symbol}'

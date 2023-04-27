@@ -1,15 +1,15 @@
 """empty message
 
-Revision ID: 3b261a4b6684
+Revision ID: 93fd7441c9b2
 Revises: 819cbf6e030b
-Create Date: 2023-04-20 02:47:06.403899
+Create Date: 2023-04-27 03:11:56.500516
 
 """
 import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "3b261a4b6684"
+revision = "93fd7441c9b2"
 down_revision = "819cbf6e030b"
 branch_labels = None
 depends_on = None
@@ -20,15 +20,18 @@ def upgrade() -> None:
     op.create_table(
         "user",
         sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("public_id", sa.String(length=50), nullable=False),
         sa.Column("username", sa.String(length=50), nullable=False),
         sa.Column("email", sa.String(length=100), nullable=False),
-        sa.Column("hashed_password", sa.String(length=1024), nullable=False),
-        sa.Column("is_active", sa.Boolean(), nullable=True),
-        sa.Column("is_superuser", sa.Boolean(), nullable=True),
-        sa.Column("timestamp_created", sa.DateTime(), nullable=True),
-        sa.Column("timestamp_updated", sa.DateTime(), nullable=True),
+        sa.Column("password", sa.String(length=100), nullable=False),
+        sa.Column("access_token", sa.String(length=1024), nullable=True),
+        sa.Column("is_active", sa.Boolean(), nullable=False),
+        sa.Column("is_superuser", sa.Boolean(), nullable=False),
+        sa.Column("timestamp_created", sa.DateTime(), nullable=False),
+        sa.Column("timestamp_updated", sa.DateTime(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("email"),
+        sa.UniqueConstraint("public_id"),
         sa.UniqueConstraint("username"),
     )
     op.create_index(op.f("ix_user_id"), "user", ["id"], unique=False)
@@ -39,9 +42,9 @@ def upgrade() -> None:
         sa.Column("entry_price", sa.Integer(), nullable=False),
         sa.Column("volume", sa.Integer(), nullable=False),
         sa.Column("realized_profit", sa.Integer(), nullable=False),
-        sa.Column("is_finalized", sa.Boolean(), nullable=True),
-        sa.Column("timestamp_created", sa.DateTime(), nullable=True),
-        sa.Column("timestamp_updated", sa.DateTime(), nullable=True),
+        sa.Column("is_finalized", sa.Boolean(), nullable=False),
+        sa.Column("timestamp_created", sa.DateTime(), nullable=False),
+        sa.Column("timestamp_updated", sa.DateTime(), nullable=False),
         sa.Column("owner_id", sa.Integer(), nullable=False),
         sa.ForeignKeyConstraint(
             ["owner_id"],
@@ -53,13 +56,18 @@ def upgrade() -> None:
     op.create_table(
         "strategy",
         sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("strategy_type", sa.Integer(), nullable=False),
+        sa.Column("symbol", sa.String(length=50), nullable=False),
         sa.Column("upper_bound", sa.Integer(), nullable=False),
         sa.Column("lower_bound", sa.Integer(), nullable=False),
+        sa.Column("grid_count", sa.Integer(), nullable=False),
         sa.Column("grid_size", sa.Integer(), nullable=False),
         sa.Column("grid_type", sa.String(length=50), nullable=False),
-        sa.Column("is_active", sa.Boolean(), nullable=True),
-        sa.Column("timestamp_created", sa.DateTime(), nullable=True),
-        sa.Column("timestamp_updated", sa.DateTime(), nullable=True),
+        sa.Column("principal_balance", sa.Integer(), nullable=False),
+        sa.Column("max_drawdown", sa.Integer(), nullable=False),
+        sa.Column("is_active", sa.Boolean(), nullable=False),
+        sa.Column("timestamp_created", sa.DateTime(), nullable=False),
+        sa.Column("timestamp_updated", sa.DateTime(), nullable=False),
         sa.Column("owner_id", sa.Integer(), nullable=False),
         sa.ForeignKeyConstraint(
             ["owner_id"],

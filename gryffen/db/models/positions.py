@@ -47,3 +47,11 @@ class Position(Base):
 
     owner_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
     owner: Mapped["User"] = relationship("User", back_populates="positions")
+
+    def __repr__(self):
+        if self.is_finalized:
+            return f'Finalized position ID: {self.id} - ' \
+                   f'{self.symbol} : entered @ {self.entry_price}'
+        else:
+            return f'On-going position ID: {self.id} - ' \
+                   f'{self.symbol} : entered @ {self.entry_price}'

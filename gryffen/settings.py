@@ -68,6 +68,8 @@ class Settings(BaseSettings):
 
     log_level: LogLevel = LogLevel.INFO
 
+    scaler = int(os.getenv("NUM_BENCHMARK"))
+
     gryffen_security_key = os.getenv("GRYFFEN_SECRET_KEY")
     hashing_iteration = os.getenv("HASH_ITERATION")
 

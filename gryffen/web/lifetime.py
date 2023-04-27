@@ -29,6 +29,9 @@ from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from gryffen.settings import settings
+from gryffen.core.websocket.streamer import Listener
+
+global_listener = Listener()
 
 
 def _setup_db(app: FastAPI) -> None:  # pragma: no cover
@@ -66,7 +69,9 @@ def register_startup_event(
     @app.on_event("startup")
     async def _startup() -> None:  # noqa: WPS430
         _setup_db(app)
-        pass  # noqa: WPS420
+        await global_listener.init()
+        await global_listener.start_listening()
+        pass
 
     return _startup
 

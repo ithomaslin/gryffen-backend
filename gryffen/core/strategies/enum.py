@@ -17,4 +17,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Services for gryffen."""
+from enum import Enum
+
+
+class GridType(Enum):
+    """This is a grid type enum."""
+
+    ARITHMETIC = 1
+    GEOMETRIC = 2
+
+
+class StrategyType(Enum):
+    """This is a strategy enum."""
+
+    GRID = 1
+    MARTINGALE = 2

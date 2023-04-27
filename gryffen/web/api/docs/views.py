@@ -33,8 +33,8 @@ async def swagger_ui_html(request: Request) -> HTMLResponse:
     """
     Swagger UI.
 
-    :param request: current request.
-    :return: rendered swagger UI.
+    @param request: current request.
+    @return: rendered swagger UI.
     """
     title = request.app.title
     return get_swagger_ui_html(
@@ -51,7 +51,7 @@ async def swagger_ui_redirect() -> HTMLResponse:
     """
     Redirect to swagger.
 
-    :return: redirect.
+    @return: redirect.
     """
     return get_swagger_ui_oauth2_redirect_html()
 
@@ -61,8 +61,8 @@ async def redoc_html(request: Request) -> HTMLResponse:
     """
     Redoc UI.
 
-    :param request: current request.
-    :return: rendered redoc UI.
+    @param request: current request.
+    @return: rendered redoc UI.
     """
     title = request.app.title
     return get_redoc_html(
