@@ -17,13 +17,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-This script is used to define the DB model for position.
-
-Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
-Date: 22/04/2023
-"""
-
 from datetime import datetime
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
@@ -32,32 +25,32 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from gryffen.db.base import Base
 
 
-class Position(Base):
+class Credential(Base):
 
-    __tablename__ = "position"
+    __tablename__ = "credential"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    symbol: Mapped[str] = mapped_column(String(50), nullable=False)
-    entry_price: Mapped[int] = mapped_column(Integer, nullable=False)
-    volume: Mapped[int] = mapped_column(Integer, nullable=False)
-    realized_profit: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    is_finalized: Mapped[bool] = mapped_column(Boolean(), default=False)
+    credential: Mapped[str] = mapped_column(String(200), nullable=False)
+    type: Mapped[str] = mapped_column(String(50), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean(), default=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
     timestamp_created: Mapped[datetime] = mapped_column(DateTime)
     timestamp_updated: Mapped[datetime] = mapped_column(DateTime)
+
+    exchange_id: Mapped[int] = mapped_column(ForeignKey("exchange.id"))
+    exchange: Mapped["Exchange"] = relationship(
+        "Exchange",
+        back_populates="credentials"
+    )
 
     owner_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
     owner: Mapped["User"] = relationship(
         "User",
-        back_populates="positions"
+        back_populates="credentials"
     )
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
     def __repr__(self):
-        if self.is_finalized:
-            return f'Finalized position ID: {self.id} - ' \
-                   f'{self.symbol} : entered @ {self.entry_price}'
-        else:
-            return f'On-going position ID: {self.id} - ' \
-                   f'{self.symbol} : entered @ {self.entry_price}'
+        return f'<Credential {self.id}>'

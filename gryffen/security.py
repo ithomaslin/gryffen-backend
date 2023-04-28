@@ -37,6 +37,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jwt import PyJWTError
 
 from gryffen.settings import settings
+from gryffen.logging import logger
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -68,7 +69,7 @@ def create_access_token(data: Dict, expire_delta: Optional[timedelta] = None) ->
         expire = datetime.utcnow() + timedelta(
             minutes=int(settings.access_token_duration_minute),
         )
-    to_encode.update({"expires": int(time.mktime(expire.timetuple()))})
+    to_encode.update({"expires": int(datetime.timestamp(expire))})
     encoded_jwt = jwt.encode(
         to_encode,
         settings.gryffen_security_key,
@@ -90,8 +91,14 @@ def decode_access_token(token: str = Depends(oauth2_scheme)) -> Dict[str, Any]:
             algorithms=settings.access_token_hash_algorithm,
         )
         username: str = payload.get("username")
+        expires: datetime = datetime.utcfromtimestamp(payload.get("expires"))
         if username is None:
+            logger.error("Invalid credential - User not found.")
+            raise credential_exception
+        elif expires <= datetime.utcnow():
+            logger.error("Invalid credential - Credential expires.")
             raise credential_exception
     except PyJWTError:
+        logger.error("Invalid credential.")
         raise credential_exception
     return payload

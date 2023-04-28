@@ -18,7 +18,7 @@
 # limitations under the License.
 
 """
-This script is used to create DB handler functions for strategy-related actions.
+This script is used to create DB handler functions for credential-related actions.
 
 Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
 Date: 22/04/2023
@@ -31,68 +31,82 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gryffen.db.models.users import User
-from gryffen.db.models.strategies import Strategy
-from gryffen.web.api.v1.strategy.schema import StrategyCreationSchema
+from gryffen.db.models.exchanges import Exchange
+from gryffen.db.models.credentials import Credential
+from gryffen.web.api.v1.credential.schema import CredentialCreationSchema
 
 
-async def create_strategy(
+async def create_credential(
     user_id: User.id,
-    submission: StrategyCreationSchema,
+    exchange_id: Exchange.id,
+    submission: CredentialCreationSchema,
     db: AsyncSession,
 ):
     """
-    Writes strategy object into the DB.
+    Writes credential object into the DB.
 
-    @param user_id: of who owns the strategy
-    @param submission: user submission data
-    @param db: DB async session
+    @param user_id:
+    @param exchange_id:
+    @param submission:
+    @param db:
     @return:
     """
 
-    strategy = Strategy(
-        symbol=submission.symbol,
-        upper_bound=submission.upper_bound,
-        lower_bound=submission.lower_bound,
-        grid_count=submission.grid_count,
-        grid_size=submission.grid_size,
-        grid_type=submission.grid_type,
-        principal_balance=submission.principal_balance,
-        max_drawdown=submission.max_drawdown,
-        is_active=True,
-        timestamp_created=datetime.utcnow(),
-        timestamp_updated=datetime.utcnow(),
+    credential = Credential(
+        credential=submission.credential,
+        type=submission.type,
+        expires_at=submission.expires_at,
+        exchange_id=exchange_id,
         owner_id=user_id,
     )
 
-    db.add(strategy)
+    db.add(credential)
     await db.commit()
-    await db.refresh(strategy)
+    await db.refresh(credential)
 
-    return strategy
+    return credential
 
 
-async def get_strategies_by_token(
+async def get_credential_by_token(
     decoded: Dict,
-    db: AsyncSession,
-    is_active: bool = True,
+    db: AsyncSession
 ):
     """
-    Fetch strategies of a user by access token.
+    Get credential objects by token.
 
     @param decoded:
     @param db:
-    @param is_active:
     @return:
     """
     stmt = (
         select(User)
         .where(
             User.username == decoded.get("username")
-            and User.strategies.any(Strategy.is_active == is_active),
         )
         .options(
-            selectinload(User.strategies),
+            selectinload(User.credentials)
         )
     )
     user_obj: User = await db.scalar(stmt)
-    return user_obj.strategies
+    return user_obj.credentials
+
+
+async def get_credential_by_exchange_id(
+    exchange_id: Exchange.id,
+    db: AsyncSession
+):
+    """
+    Get credential objects by exchange_id.
+
+    @param exchange_id:
+    @param db:
+    @return:
+    """
+    stmt = (
+        select(Credential)
+        .where(
+            Credential.exchange_id == exchange_id
+        )
+    )
+    credential_obj: Credential = await db.scalar(stmt)
+    return credential_obj

@@ -33,6 +33,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from gryffen.db.base import Base
 from gryffen.db.models.positions import Position
 from gryffen.db.models.strategies import Strategy
+from gryffen.db.models.exchanges import Exchange
+from gryffen.db.models.credentials import Credential
+from gryffen.db.models.activations import Activation
 from gryffen.security import hashing
 
 
@@ -44,7 +47,7 @@ class User(Base):
     public_id: Mapped[str] = mapped_column(String(50), unique=True)
     username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
     email: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
-    password: Mapped[str] = mapped_column(String(100), nullable=False)
+    password: Mapped[str] = mapped_column(String(1024), nullable=False)
     access_token: Mapped[str] = mapped_column(String(1024), nullable=True, default=None)
     is_active: Mapped[bool] = mapped_column(Boolean(), default=False)
     is_superuser: Mapped[bool] = mapped_column(Boolean(), default=False)
@@ -56,8 +59,27 @@ class User(Base):
         back_populates="owner",
         cascade="all, delete-orphan",
     )
+
     strategies: Mapped[List["Strategy"]] = relationship(
         "Strategy",
+        back_populates="owner",
+        cascade="all, delete-orphan",
+    )
+
+    exchanges: Mapped[List["Exchange"]] = relationship(
+        "Exchange",
+        back_populates="owner",
+        cascade="all, delete-orphan",
+    )
+
+    credentials: Mapped[List["Credential"]] = relationship(
+        "Credential",
+        back_populates="owner",
+        cascade="all, delete-orphan",
+    )
+
+    activations: Mapped[List["Activation"]] = relationship(
+        "Activation",
         back_populates="owner",
         cascade="all, delete-orphan",
     )

@@ -50,7 +50,13 @@ class Strategy(Base):
     timestamp_updated: Mapped[datetime] = mapped_column(DateTime)
 
     owner_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
-    owner: Mapped["User"] = relationship(back_populates="strategies")
+    owner: Mapped["User"] = relationship(
+        "User",
+        back_populates="strategies"
+    )
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     def __repr__(self):
         return f'Strategy {self.id} - {self.symbol}'

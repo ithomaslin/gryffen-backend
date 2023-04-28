@@ -18,7 +18,7 @@
 # limitations under the License.
 
 """
-This script is used to create API routers for strategy-related actions.
+This script is used to create API routers for exchange-related actions.
 
 Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
 Date: 22/04/2023
@@ -29,53 +29,53 @@ from typing import Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gryffen.db.dependencies import get_db_session
-from gryffen.db.models.strategies import Strategy
-from gryffen.db.handlers.strategy import (
-    get_strategies_by_token,
-    create_strategy,
-)
-from gryffen.web.api.v1.strategy.schema import StrategyCreationSchema
 from gryffen.security import decode_access_token
+from gryffen.db.models.exchanges import Exchange
+from gryffen.db.handlers.exchange import (
+    create_exchange, get_exchanges_by_token
+)
+from gryffen.web.api.v1.exchange.schema import ExchangeCreationSchema
 
-router = APIRouter(prefix="/strategy")
+
+router = APIRouter(prefix="/exchange")
 
 
 @router.get("/")
 async def get(
     current_user: Dict[str, Any] = Depends(decode_access_token),
-    db: AsyncSession = Depends(get_db_session),
+    db: AsyncSession = Depends(get_db_session)
 ):
     """
-    API endpoint: fetch all strategies of a given user by access token.
-
+    API endpoint: fetch all exchanges of a given user by access token.
     @param current_user:
     @param db:
     @return:
     """
-    strategies: Strategy = await get_strategies_by_token(current_user, db)
-    return {"strategies": strategies}
+    exchanges: Exchange = await get_exchanges_by_token(current_user, db)
+    return {"exchanges": exchanges}
 
 
-@router.post("/create")
+@router.post("/")
 async def create(
-    request: StrategyCreationSchema,
+    request: ExchangeCreationSchema,
     current_user: Dict[str, Any] = Depends(decode_access_token),
-    db: AsyncSession = Depends(get_db_session),
+    db: AsyncSession = Depends(get_db_session)
 ):
     """
-    API endpoint: create a new strategy for a given user by access token.
+    API endpoint: create an exchange for a given user by access token.
 
     @param request:
     @param current_user:
     @param db:
     @return:
     """
-    strategy = await create_strategy(
+    exchange: Exchange = await create_exchange(
         user_id=current_user.get("id"),
         submission=request,
-        db=db,
+        db=db
     )
     return {
-        "info": "Strategy created successfully.",
-        "strategy": strategy,
+        "info": "Exchange created successfully.",
+        "exchange": exchange
     }
+

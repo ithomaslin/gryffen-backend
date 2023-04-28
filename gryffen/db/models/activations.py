@@ -18,46 +18,30 @@
 # limitations under the License.
 
 """
-This script is used to define the DB model for position.
+This script is used to define the DB model for user.
 
 Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
 Date: 22/04/2023
 """
 
 from datetime import datetime
-
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Boolean, DateTime, Integer, String, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from gryffen.db.base import Base
 
 
-class Position(Base):
+class Activation(Base):
 
-    __tablename__ = "position"
+    __tablename__ = "activation"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    symbol: Mapped[str] = mapped_column(String(50), nullable=False)
-    entry_price: Mapped[int] = mapped_column(Integer, nullable=False)
-    volume: Mapped[int] = mapped_column(Integer, nullable=False)
-    realized_profit: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    is_finalized: Mapped[bool] = mapped_column(Boolean(), default=False)
+    activation_code: Mapped[str] = mapped_column(String(1024))
+    is_active: Mapped[bool] = mapped_column(Boolean(), default=True)
     timestamp_created: Mapped[datetime] = mapped_column(DateTime)
-    timestamp_updated: Mapped[datetime] = mapped_column(DateTime)
 
-    owner_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
+    owner_id: Mapped[int] = mapped_column(Integer, ForeignKey("user.id"))
     owner: Mapped["User"] = relationship(
         "User",
-        back_populates="positions"
+        back_populates="activations"
     )
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-    def __repr__(self):
-        if self.is_finalized:
-            return f'Finalized position ID: {self.id} - ' \
-                   f'{self.symbol} : entered @ {self.entry_price}'
-        else:
-            return f'On-going position ID: {self.id} - ' \
-                   f'{self.symbol} : entered @ {self.entry_price}'

@@ -33,7 +33,9 @@ from fastapi import HTTPException
 
 from gryffen.db.models.users import User
 from gryffen.security import create_access_token
+from gryffen.db.handlers.activation import verify_activation_code
 from gryffen.web.api.v1.user.schema import UserCreationSchema
+from gryffen.logging import logger
 
 
 async def create_user(
@@ -59,6 +61,8 @@ async def create_user(
     await db.commit()
     await db.refresh(user)
 
+    logger.info(f"[{datetime.utcnow()}] User {user.username} created successfully.")
+
     return user
 
 
@@ -75,11 +79,17 @@ async def check_user_exist(user: UserCreationSchema, db: AsyncSession):
     )
     result = await db.execute(stmt)
     if result.scalar():
+        logger.info(f"[{datetime.utcnow()}] User {user.username} already exists.")
         return True
+
+    logger.info(f"[{datetime.utcnow()}] User {user.username} does not exist.")
     return False
 
 
-async def get_user_by_token(current_user: Dict[str, Any], db: AsyncSession):
+async def get_user_by_token(
+    current_user: Dict[str, Any],
+    db: AsyncSession
+) -> Dict[str, Any]:
     """
     Fetch the info of a user by access token.
 
@@ -88,34 +98,51 @@ async def get_user_by_token(current_user: Dict[str, Any], db: AsyncSession):
     @return:
     """
     stmt = select(User).where(User.username == current_user.get("username"))
-    result: User = await db.scalar(stmt)
-    if result:
-        return result
-    return None
+    usr: User = await db.scalar(stmt)
+    if usr:
+        logger.info(
+            f"[{datetime.utcnow()}] User {usr.username} fetched successfully."
+        )
+        return {
+            "status": "success",
+            "message": "User fetched successfully.",
+            "data": {
+                "usr": usr,
+            },
+        }
+
+    logger.info(f"[{datetime.utcnow()}] User {current_user.get('username')} not found.")
+    return {
+        "status": "failed",
+        "message": "User not found.",
+        "data": {},
+    }
 
 
-async def activate_user(public_id: str, db: AsyncSession):
+async def activate_user(activation_code: str, db: AsyncSession) -> Dict[str, Any]:
     """
     Activate a user.
 
-    @param public_id:
+    @param activation_code:
     @param db:
     @return:
     """
-    usr: User = await db.scalar(
-        select(User).where(User.public_id == public_id),
+    decoded_token = await verify_activation_code(activation_code, db)
+    print(decoded_token)
+    usr = await db.execute(
+        select(User).where(User.id == decoded_token.get("id")),
     )
 
     if usr:
         stmt = (
             update(User)
-            .where(User.public_id == public_id)
+            .where(User.id == decoded_token.get("id"))
             .values(
                 access_token=create_access_token(
                     {
-                        "id": usr.id,
-                        "username": usr.username,
-                        "email": usr.email,
+                        "id": decoded_token.get("id"),
+                        "username": decoded_token.get("username"),
+                        "email": decoded_token.get("email"),
                     },
                 ),
                 is_active=True,
@@ -125,11 +152,22 @@ async def activate_user(public_id: str, db: AsyncSession):
         await db.execute(stmt)
         await db.commit()
     else:
-        raise HTTPException
-    return True
+        raise HTTPException(status_code=404, detail="User not found.")
+    return {
+        "status": "success",
+        "message": "User activated successfully.",
+        "data": {
+            "username": decoded_token.get("username"),
+            "email": decoded_token.get("email")
+        }
+    }
 
 
-async def promote_user(current_user: Dict[str, Any], public_id: str, db: AsyncSession):
+async def promote_user(
+    current_user: Dict[str, Any],
+    public_id: str,
+    db: AsyncSession
+) -> Dict[str, Any]:
     """
     Promote a user to superuser.
 
@@ -144,8 +182,18 @@ async def promote_user(current_user: Dict[str, Any], public_id: str, db: AsyncSe
             User.username == current_user.get("username")
             and User.public_id == public_id,
         )
-        .values(is_superuser=True, timestamp_updated=datetime.utcnow())
+        .values(
+            is_superuser=True,
+            timestamp_updated=datetime.utcnow()
+        )
     )
     await db.execute(stmt)
     await db.commit()
-    return True
+    return {
+        "status": "success",
+        "message": "User promoted successfully.",
+        "data": {
+            "username": current_user.get("username"),
+            "public_id": public_id,
+        },
+    }

@@ -36,6 +36,7 @@ from gryffen.db.handlers.user import (
     get_user_by_token,
     promote_user,
 )
+from gryffen.db.handlers.activation import create_activation_code
 from gryffen.db.models.users import User
 from gryffen.security import decode_access_token
 from gryffen.web.api.v1.user.schema import UserCreationSchema
@@ -62,7 +63,14 @@ async def register(
     if not valid:
         return {"error": "Input is invalid"}
     user = await create_user(request, db)
-    return user
+    activation_code = await create_activation_code(
+        user.id, user.username, user.email, db
+    )
+    return {
+        "user": user,
+        "activation_code": activation_code,
+        "info": "Please activate your account within 15 minutes."
+    }
 
 
 @router.get("/")
@@ -81,19 +89,19 @@ async def get_user(
     return {"user": user}
 
 
-@router.get("/activate/{public_id}")
+@router.get("/activate/{activation_code}")
 async def activate(
-    public_id: str,
+    activation_code: str,
     db: AsyncSession = Depends(get_db_session),
 ):
     """
     API endpoint: activate a given user by access token.
 
-    @param public_id:
+    @param activation_code:
     @param db:
     @return:
     """
-    result = await activate_user(public_id, db)
+    result = await activate_user(activation_code, db)
     return {
         "success": result,
     }

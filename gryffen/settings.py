@@ -89,6 +89,13 @@ class Settings(BaseSettings):
     finnhub_ws_endpoint = os.getenv("FINNHUB_WEBSOCKET_URI")
     finnhub_api_key = os.getenv("FINNHUB_API_KEY")
 
+    # TD Ameritrade
+    td_ameritrade_api_key = os.getenv("TD_API_CONSUMER_KEY")
+    td_ameritrade_auth_url = os.getenv("TD_API_AUTH_URL")
+    td_ameritrade_base_url = os.getenv("TD_API_BASE_URL")
+    td_ameritrade_auth_endpoint = os.getenv("TD_API_AUTH_URL")
+    td_ameritrade_orders_endpoint = os.getenv("TD_API_ORDERS_URL")
+
     @property
     def db_url(self) -> URL:
         """
