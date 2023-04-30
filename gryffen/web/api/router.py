@@ -27,7 +27,7 @@ Date: 22/04/2023
 from fastapi.routing import APIRouter
 
 from gryffen.web.api import docs, echo, monitoring
-from gryffen.web.api.v1 import auth, strategy, user
+from gryffen.web.api.v1 import auth, strategy, user, exchange, credential
 
 api_router = APIRouter()
 api_router.include_router(monitoring.router)
@@ -36,3 +36,5 @@ api_router.include_router(echo.router, prefix="/echo", tags=["echo"])
 api_router.include_router(auth.router, prefix="/v1", tags=["auth", "v1"])
 api_router.include_router(user.router, prefix="/v1", tags=["user", "v1"])
 api_router.include_router(strategy.router, prefix="/v1", tags=["strategy", "v1"])
+api_router.include_router(exchange.router, prefix="/v1", tags=["exchange", "v1"])
+api_router.include_router(credential.router, prefix="/v1", tags=["credential", "v1"])

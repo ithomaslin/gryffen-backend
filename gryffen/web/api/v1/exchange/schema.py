@@ -31,4 +31,4 @@ class ExchangeCreationSchema(BaseModel):
 
     name: str
     type: str
-    account_id: int
+    account_id: str

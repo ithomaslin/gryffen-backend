@@ -107,7 +107,7 @@ async def get_user_by_token(
             "status": "success",
             "message": "User fetched successfully.",
             "data": {
-                "usr": usr,
+                "user": usr,
             },
         }
 
@@ -119,7 +119,10 @@ async def get_user_by_token(
     }
 
 
-async def activate_user(activation_code: str, db: AsyncSession) -> Dict[str, Any]:
+async def activate_user(
+    activation_code: str,
+    db: AsyncSession
+) -> Dict[str, Any]:
     """
     Activate a user.
 
@@ -128,23 +131,23 @@ async def activate_user(activation_code: str, db: AsyncSession) -> Dict[str, Any
     @return:
     """
     decoded_token = await verify_activation_code(activation_code, db)
-    print(decoded_token)
     usr = await db.execute(
-        select(User).where(User.id == decoded_token.get("id")),
+        select(User).where(User.id == decoded_token.get("user_id")),
     )
 
-    if usr:
+    if usr.scalar():
+        access_token = create_access_token(
+            {
+                "id": decoded_token.get("user_id"),
+                "username": decoded_token.get("username"),
+                "email": decoded_token.get("email"),
+            },
+        )
         stmt = (
             update(User)
-            .where(User.id == decoded_token.get("id"))
+            .where(User.id == decoded_token.get("user_id"))
             .values(
-                access_token=create_access_token(
-                    {
-                        "id": decoded_token.get("id"),
-                        "username": decoded_token.get("username"),
-                        "email": decoded_token.get("email"),
-                    },
-                ),
+                access_token=access_token,
                 is_active=True,
                 timestamp_updated=datetime.utcnow(),
             )
@@ -158,7 +161,8 @@ async def activate_user(activation_code: str, db: AsyncSession) -> Dict[str, Any
         "message": "User activated successfully.",
         "data": {
             "username": decoded_token.get("username"),
-            "email": decoded_token.get("email")
+            "email": decoded_token.get("email"),
+            "access_token": access_token,
         }
     }
 
@@ -196,4 +200,46 @@ async def promote_user(
             "username": current_user.get("username"),
             "public_id": public_id,
         },
+    }
+
+
+async def create_new_access_token(
+    email: str,
+    db: AsyncSession
+) -> Dict[str, Any]:
+    """
+    Create a new access token for a user.
+
+    @param email:
+    @param db:
+    @return:
+    """
+    stmt = select(User).where(User.email == email)
+    current_user: User = await db.scalar(stmt)
+    if current_user:
+        new_token = create_access_token({
+            "id": current_user.id,
+            "username": current_user.username,
+            "email": current_user.email,
+        })
+        stmt = (
+            update(User)
+            .where(User.id == current_user.id)
+            .values(
+                access_token=new_token,
+                timestamp_updated=datetime.utcnow(),
+            )
+        )
+        await db.execute(stmt)
+        await db.commit()
+    else:
+        raise HTTPException(status_code=404, detail="User not found.")
+    return {
+        "status": "success",
+        "message": "New access token created successfully.",
+        "data": {
+            "username": current_user.username,
+            "email": current_user.email,
+            "access_token": new_token,
+        }
     }

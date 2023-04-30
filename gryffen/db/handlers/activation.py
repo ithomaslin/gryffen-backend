@@ -162,27 +162,28 @@ async def verify_activation_code(
 
 
 async def reissue_activation_code(
-    user_id: User.id,
-    username: User.username,
-    email: User.email,
+    email: str,
     db: AsyncSession,
 ) -> Activation:
     """
     Reissues an activation code for the user.
 
-    @param user_id: of the user
-    @param username: of the user
     @param email: of the user
     @param db: Async DB session
     @return:
     """
+    usr: User = await db.scalar(select(User).where(User.email == email))
+    if not usr:
+        raise HTTPException(status_code=404, detail="User not found.")
+
     stmt = (
         update(Activation)
-        .where(Activation.owner_id == user_id)
+        .where(Activation.owner_id == usr.id)
         .values(is_active=False)
     )
     await db.execute(stmt)
+    await db.commit()
     activation_code = await create_activation_code(
-        user_id, username, email, db
+        usr.id, usr.username, usr.email, db
     )
     return activation_code

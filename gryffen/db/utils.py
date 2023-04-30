@@ -25,7 +25,7 @@ Date: 22/04/2023
 """
 
 from datetime import date, datetime
-
+from enum import Enum
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 

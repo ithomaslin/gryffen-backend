@@ -26,10 +26,12 @@ Date: 22/04/2023
 
 from pydantic import BaseModel
 from datetime import datetime
+from typing import Optional
 
 
 class CredentialCreationSchema(BaseModel):
 
+    exchange_id: int
     credential: str
     type: str
-    expires_at: datetime
+    expires_at: Optional[datetime] = None

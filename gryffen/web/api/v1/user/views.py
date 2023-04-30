@@ -35,9 +35,12 @@ from gryffen.db.handlers.user import (
     create_user,
     get_user_by_token,
     promote_user,
+    create_new_access_token
 )
-from gryffen.db.handlers.activation import create_activation_code
-from gryffen.db.models.users import User
+from gryffen.db.handlers.activation import (
+    create_activation_code,
+    reissue_activation_code
+)
 from gryffen.security import decode_access_token
 from gryffen.web.api.v1.user.schema import UserCreationSchema
 
@@ -67,9 +70,13 @@ async def register(
         user.id, user.username, user.email, db
     )
     return {
-        "user": user,
-        "activation_code": activation_code,
-        "info": "Please activate your account within 15 minutes."
+        "status": "success",
+        "message": "User created.",
+        "data": {
+            "user": user,
+            "activation_code": activation_code,
+            "info": "Please activate your account within 15 minutes."
+        }
     }
 
 
@@ -77,7 +84,7 @@ async def register(
 async def get_user(
     current_user: Dict[str, Any] = Depends(decode_access_token),
     db: AsyncSession = Depends(get_db_session),
-):
+) -> Dict[str, Any]:
     """
     API endpoint: fetch user info.
 
@@ -85,8 +92,32 @@ async def get_user(
     @param db:
     @return:
     """
-    user: User = await get_user_by_token(current_user, db)
-    return {"user": user}
+    user: Dict[str, Any] = await get_user_by_token(current_user, db)
+    return {
+        "status": "success",
+        "message": "User info fetched.",
+        "data": {"user": user}
+    }
+
+
+@router.get("/reissue-activation-code/{email}")
+async def reissue(
+    email: str,
+    db: AsyncSession = Depends(get_db_session)
+) -> Dict[str, Any]:
+    """
+    API endpoint: reissue activation code.
+
+    @param email: of the user
+    @param db: DB AsyncSession
+    @return:
+    """
+    access_token = await reissue_activation_code(email, db)
+    return {
+        "status": "success",
+        "message": "Activation code reissued.",
+        "data": {"access_token": access_token}
+    }
 
 
 @router.get("/activate/{activation_code}")
@@ -101,10 +132,7 @@ async def activate(
     @param db:
     @return:
     """
-    result = await activate_user(activation_code, db)
-    return {
-        "success": result,
-    }
+    return await activate_user(activation_code, db)
 
 
 @router.post("/promote/{public_id}")
@@ -122,5 +150,19 @@ async def promote(
     @param db:
     @return:
     """
-    result = await promote_user(current_user, public_id, db)
-    return {"success": result}
+    return await promote_user(current_user, public_id, db)
+
+
+@router.get("/new_access_token/{email}")
+async def new_access_token(
+    email: str,
+    db: AsyncSession = Depends(get_db_session)
+) -> Dict[str, Any]:
+    """
+    API endpoint: create a new access token.
+
+    @param email: of the user
+    @param db:
+    @return:
+    """
+    return await create_new_access_token(email, db)

@@ -52,7 +52,11 @@ async def get(
     @return:
     """
     exchanges: Exchange = await get_exchanges_by_token(current_user, db)
-    return {"exchanges": exchanges}
+    return {
+        "status": "success",
+        "message": "Exchanges fetched successfully.",
+        "data": {"exchanges": exchanges}
+    }
 
 
 @router.post("/")
@@ -75,7 +79,8 @@ async def create(
         db=db
     )
     return {
-        "info": "Exchange created successfully.",
-        "exchange": exchange
+        "status": "success",
+        "message": "Exchange created successfully.",
+        "data": {"exchange": exchange}
     }
 

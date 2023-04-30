@@ -33,7 +33,7 @@ class Exchange(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String(50), nullable=False)
     type: Mapped[str] = mapped_column(String(50), nullable=False)
-    account_id: Mapped[int] = mapped_column(Integer, nullable=True)
+    account_id: Mapped[str] = mapped_column(String(50), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean(), default=True)
     label: Mapped[str] = mapped_column(String(50), nullable=True)
     timestamp_created: Mapped[datetime] = mapped_column(DateTime)

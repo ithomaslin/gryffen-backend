@@ -17,3 +17,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from gryffen.web.api.v1.exchange.views import router
+
+__all__ = ["router"]

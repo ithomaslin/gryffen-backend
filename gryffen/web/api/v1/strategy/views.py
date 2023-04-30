@@ -33,6 +33,7 @@ from gryffen.db.models.strategies import Strategy
 from gryffen.db.handlers.strategy import (
     get_strategies_by_token,
     create_strategy,
+    deactivate_strategy,
 )
 from gryffen.web.api.v1.strategy.schema import StrategyCreationSchema
 from gryffen.security import decode_access_token
@@ -53,7 +54,11 @@ async def get(
     @return:
     """
     strategies: Strategy = await get_strategies_by_token(current_user, db)
-    return {"strategies": strategies}
+    return {
+        "status": "success",
+        "message": "Strategy fetched successfully.",
+        "data": {"strategy": strategies},
+    }
 
 
 @router.post("/create")
@@ -76,6 +81,24 @@ async def create(
         db=db,
     )
     return {
-        "info": "Strategy created successfully.",
-        "strategy": strategy,
+        "status": "success",
+        "message": "Strategy created successfully.",
+        "data": {"strategy": strategy},
     }
+
+
+@router.put("/deactivate/{strategy_id}")
+async def deactivate(
+    strategy_id: int,
+    current_user: Dict[str, Any] = Depends(decode_access_token),
+    db: AsyncSession = Depends(get_db_session),
+):
+    """
+    API endpoint: deactivate a strategy for a given user by access token.
+
+    @param strategy_id:
+    @param current_user:
+    @param db:
+    @return:
+    """
+    return await deactivate_strategy(current_user, strategy_id, db)

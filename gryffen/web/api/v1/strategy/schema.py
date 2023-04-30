@@ -25,15 +25,16 @@ Date: 22/04/2023
 """
 
 from pydantic import BaseModel
+from typing import Optional
 
 
 class StrategyCreationSchema(BaseModel):
 
     symbol: str
-    upper_bound: int
-    lower_bound: int
-    grid_count: int
+    strategy_type: int
+    grid_type: int
+    upper_bound: float
+    lower_bound: float
     grid_size: int
-    grid_type: str
-    principal_balance: int
-    max_drawdown: int
+    principal_balance: float
+    max_drawdown: Optional[float] = None

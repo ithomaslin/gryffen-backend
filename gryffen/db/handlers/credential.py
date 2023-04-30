@@ -38,7 +38,6 @@ from gryffen.web.api.v1.credential.schema import CredentialCreationSchema
 
 async def create_credential(
     user_id: User.id,
-    exchange_id: Exchange.id,
     submission: CredentialCreationSchema,
     db: AsyncSession,
 ):
@@ -46,18 +45,18 @@ async def create_credential(
     Writes credential object into the DB.
 
     @param user_id:
-    @param exchange_id:
     @param submission:
     @param db:
     @return:
     """
-
     credential = Credential(
+        exchange_id=submission.exchange_id,
         credential=submission.credential,
         type=submission.type,
         expires_at=submission.expires_at,
-        exchange_id=exchange_id,
-        owner_id=user_id,
+        timestamp_created=datetime.utcnow(),
+        timestamp_updated=datetime.utcnow(),
+        owner_id=user_id
     )
 
     db.add(credential)
@@ -67,7 +66,7 @@ async def create_credential(
     return credential
 
 
-async def get_credential_by_token(
+async def get_credentials_by_token(
     decoded: Dict,
     db: AsyncSession
 ):

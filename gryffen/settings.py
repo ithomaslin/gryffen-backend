@@ -72,6 +72,7 @@ class Settings(BaseSettings):
 
     gryffen_security_key = os.getenv("GRYFFEN_SECRET_KEY")
     hashing_iteration = os.getenv("HASH_ITERATION")
+    unix_timestamp_never_expire = os.getenv("UNIX_TIMESTAMP_NEVER_EXPIRE")
 
     # Access token
     access_token_hash_algorithm = os.getenv("ACCESS_TOKEN_HASH_ALGO")

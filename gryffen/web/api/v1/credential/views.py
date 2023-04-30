@@ -31,6 +31,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from gryffen.db.dependencies import get_db_session
 from gryffen.security import decode_access_token
 from gryffen.db.models.credentials import Credential
+from gryffen.web.api.v1.credential.schema import CredentialCreationSchema
+from gryffen.db.handlers.credential import (
+    create_credential, get_credentials_by_token
+)
 
 
 router = APIRouter(prefix="/credential")
@@ -49,4 +53,34 @@ async def get(
     @return:
     """
     credentials: Credential = await get_credentials_by_token(current_user, db)
-    return {"credentials": credentials}
+    return {
+        "status": "success",
+        "message": "Credentials fetched successfully.",
+        "data": {"credentials": credentials}
+    }
+
+
+@router.post("/")
+async def create(
+    request: CredentialCreationSchema,
+    current_user: Dict[str, Any] = Depends(decode_access_token),
+    db: AsyncSession = Depends(get_db_session),
+):
+    """
+    API endpoint: create a credential for a given user by access token.
+
+    @param request:
+    @param current_user:
+    @param db:
+    @return:
+    """
+    credential = await create_credential(
+        user_id=current_user.get("id"),
+        submission=request,
+        db=db
+    )
+    return {
+        "status": "success",
+        "message": "Credential created successfully.",
+        "data": {"credential": credential}
+    }

@@ -18,6 +18,7 @@
 # limitations under the License.
 
 from gryffen.core.strategies.grid import GridStrategy
+from gryffen.core.strategies.martingale import MartingaleStrategy
 
 
-__all__ = ["GridStrategy"]
+__all__ = ["GridStrategy", "MartingaleStrategy"]

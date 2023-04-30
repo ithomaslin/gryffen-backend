@@ -25,7 +25,9 @@ Date: 22/04/2023
 """
 
 from datetime import datetime
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
+from typing import List, Any
+from decimal import Decimal
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Numeric, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from gryffen.db.base import Base
@@ -37,14 +39,14 @@ class Strategy(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     strategy_type: Mapped[int] = mapped_column(Integer)
+    grid_type: Mapped[int] = mapped_column(Integer)
     symbol: Mapped[str] = mapped_column(String(50))
-    upper_bound: Mapped[int] = mapped_column(Integer)
-    lower_bound: Mapped[int] = mapped_column(Integer)
-    grid_count: Mapped[int] = mapped_column(Integer)
+    upper_bound: Mapped[Decimal] = mapped_column(Numeric(precision=10, scale=4))
+    lower_bound: Mapped[Decimal] = mapped_column(Numeric(precision=10, scale=4))
     grid_size: Mapped[int] = mapped_column(Integer)
-    grid_type: Mapped[str] = mapped_column(String(50))
-    principal_balance: Mapped[int] = mapped_column(Integer)
-    max_drawdown: Mapped[int] = mapped_column(Integer)
+    grids: Mapped[List[Any]] = mapped_column(JSON)
+    principal_balance: Mapped[Decimal] = mapped_column(Numeric(precision=10, scale=4))
+    max_drawdown: Mapped[Decimal] = mapped_column(Numeric(precision=10, scale=4))
     is_active: Mapped[bool] = mapped_column(Boolean(), default=True)
     timestamp_created: Mapped[datetime] = mapped_column(DateTime)
     timestamp_updated: Mapped[datetime] = mapped_column(DateTime)
@@ -53,6 +55,12 @@ class Strategy(Base):
     owner: Mapped["User"] = relationship(
         "User",
         back_populates="strategies"
+    )
+
+    positions: Mapped[List["Position"]] = relationship(
+        "Position",
+        back_populates="strategy",
+        cascade="all, delete, delete-orphan"
     )
 
     def __init__(self, **kwargs):

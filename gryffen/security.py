@@ -27,11 +27,11 @@ Date: 22/04/2023
 import binascii
 import hashlib
 import os
-import time
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 
 import jwt
+from enum import Enum
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt import PyJWTError
@@ -91,11 +91,11 @@ def decode_access_token(token: str = Depends(oauth2_scheme)) -> Dict[str, Any]:
             algorithms=settings.access_token_hash_algorithm,
         )
         username: str = payload.get("username")
-        expires: datetime = datetime.utcfromtimestamp(payload.get("expires"))
+        expires: datetime = datetime.fromtimestamp(payload.get("expires"))
         if username is None:
             logger.error("Invalid credential - User not found.")
             raise credential_exception
-        elif expires <= datetime.utcnow():
+        elif datetime.utcnow() >= expires:
             logger.error("Invalid credential - Credential expires.")
             raise credential_exception
     except PyJWTError:

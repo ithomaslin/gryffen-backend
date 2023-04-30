@@ -19,10 +19,10 @@
 
 import json
 import asyncio
+import bisect
 import websockets
 from asyncio import Task
-from datetime import datetime
-from typing import List, Any, Dict
+from typing import List, Any, Dict, Optional
 from sqlalchemy import select, ScalarResult
 from sqlalchemy.ext.asyncio import (
     AsyncSession, AsyncEngine, create_async_engine
@@ -31,9 +31,8 @@ from sqlalchemy.ext.asyncio import (
 from gryffen.settings import settings
 from gryffen.core.websocket.schema import FinnhubWS
 from gryffen.db.models.strategies import Strategy
-from gryffen.core import strategies
-from gryffen.core.strategies import GridStrategy
-from gryffen.core.strategies.enum import GridType, StrategyType
+from gryffen.core.strategies import GridStrategy, MartingaleStrategy
+from gryffen.core.strategies.enum import StrategyType
 
 
 class Listener:
@@ -41,11 +40,11 @@ class Listener:
     def __init__(self):
         """This is the constructor for the Listener class."""
         self.subscribers: List[str] = []
+        self.strategy_pool: List[Dict[str, Any]] = []
         self.strategies: ScalarResult or None = None
         self.listener_task: Task or None = None
         self.engine: AsyncEngine or None = None
         self.session: AsyncSession or None = None
-        self.strategy_pool: List[Dict[str, Any]] or None = None
 
     async def init(self) -> None:
         """
@@ -63,26 +62,76 @@ class Listener:
         if self.strategies:
             for strategy in self.strategies.fetchall():
                 if strategy.strategy_type == StrategyType.GRID:
-                    self.strategy_pool.append(
-                        {
-                            "owner_id": strategy.owner_id,
-                            "strategy": GridStrategy(
-                                strategy.upper_bound, strategy.lower_bound,
-                                strategy.grid_size, strategy.strategy_type,
-                                strategy.stop_loss, strategy.trade_amount,
-                                strategy.owner_id
-                            ),
-                        }
+                    _strategy = GridStrategy(
+                        symbol=strategy.symbol,
+                        upper_bound=strategy.upper_bound,
+                        lower_bound=strategy.lower_bound,
+                        grid_size=strategy.grid_size,
+                        grid_type=strategy.grid_type,
+                        max_drawdown=strategy.max_drawdown,
+                        owner_id=strategy.owner_id,
+                        principal_balance=strategy.principal_balance
                     )
-                q = json.dumps({"type": "subscribe", "symbol": strategy.symbol})
-                await self.subscribe(q)
+                    await self.subscribe(grid_strategy=_strategy)
+                else:
+                    _strategy = MartingaleStrategy(
+                        symbol=strategy.symbol,
+                        upper_bound=strategy.upper_bound,
+                        lower_bound=strategy.lower_bound,
+                        grid_size=strategy.grid_size,
+                        grid_type=strategy.grid_type,
+                        max_drawdown=strategy.max_drawdown,
+                        owner_id=strategy.owner_id,
+                        principal_balance=strategy.principal_balance
+                    )
+                    await self.subscribe(martingale_strategy=_strategy)
+        else:
+            # This section is intentionally left blank
+            pass
 
-    async def subscribe(self, q: str) -> None:
+    async def subscribe(
+        self,
+        grid_strategy: Optional[GridStrategy] = None,
+        martingale_strategy: Optional[MartingaleStrategy] = None
+    ) -> None:
         """
         Adds trading symbols to websocket client list.
-        @param q:
+        @param grid_strategy: Grid strategy object
+        @param martingale_strategy: Martingale strategy object
         @return: None
         """
+        assert grid_strategy or martingale_strategy, \
+            "At least one strategy must not be None."
+
+        # Adding strategy to the strategy pool
+        # and sorting the list by symbol for faster future lookup
+        s = grid_strategy if grid_strategy else martingale_strategy
+        pool_obj = {
+            "owner_id": s.owner_id,
+            "symbol": s.symbol,
+            "timestamp_created": s.created,
+            "strategy": s
+        }
+        self.strategy_pool.append(pool_obj)
+        self.strategy_pool = sorted(
+            self.strategy_pool, key=lambda x: x["symbol"]
+        )
+
+        # Adding trading symbol to the subscriber list
+        # and sorting the list by symbol for faster lookup
+        self.subscribers.append(
+            json.dumps({"type": "subscribe", "symbol": s.symbol})
+        )
+        self.subscribers = sorted(self.subscribers, key=lambda x: x["symbol"])
+
+    async def unsubscribe(self, strategy: Strategy) -> None:
+        """
+        Removes trading symbols from websocket client list.
+        @param strategy:
+        @return: None
+        """
+
+        q = json.dumps({"type": "subscribe", "symbol": strategy.symbol})
         self.subscribers.append(q)
 
     async def start_listening(self) -> None:
@@ -114,7 +163,25 @@ class Listener:
                 message = await websocket.recv()
                 ws_obj = FinnhubWS(message)
                 for signal in ws_obj.signals:
-                    pass
+                    print(f'{signal.get("symbol")} - {signal.get("price")}')
+
+    async def _lookup_strategy_pool(self, symbol: str) -> List[Dict[str, Any]]:
+        """
+        Looks up the strategy pool for the symbol.
+
+        This is a private method that is used to look up the
+        strategy pool for the symbol.
+
+        @param symbol: Trading symbol
+        @return: Strategy object
+        """
+        left_index = bisect.bisect_left(
+            [s["symbol"] for s in self.strategy_pool], symbol
+        )
+        right_index = bisect.bisect_left(
+            [s["symbol"] for s in self.strategy_pool], symbol
+        )
+        return self.strategy_pool[left_index:right_index]
 
     @staticmethod
     async def _get_strategies(session: AsyncSession) -> ScalarResult[Any]:

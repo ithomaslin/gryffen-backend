@@ -25,8 +25,8 @@ Date: 22/04/2023
 """
 
 from datetime import datetime
-
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
+from decimal import Decimal
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Numeric
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from gryffen.db.base import Base
@@ -38,16 +38,28 @@ class Position(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     symbol: Mapped[str] = mapped_column(String(50), nullable=False)
-    entry_price: Mapped[int] = mapped_column(Integer, nullable=False)
-    volume: Mapped[int] = mapped_column(Integer, nullable=False)
-    realized_profit: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     is_finalized: Mapped[bool] = mapped_column(Boolean(), default=False)
     timestamp_created: Mapped[datetime] = mapped_column(DateTime)
     timestamp_updated: Mapped[datetime] = mapped_column(DateTime)
+    entry_price: Mapped[Decimal] = mapped_column(
+        Numeric(precision=10, scale=4), nullable=False
+    )
+    volume: Mapped[Decimal] = mapped_column(Numeric(
+        precision=10, scale=4), nullable=False
+    )
+    realized_profit: Mapped[Decimal] = mapped_column(
+        Numeric(precision=10, scale=4), default=0, nullable=False
+    )
 
     owner_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
     owner: Mapped["User"] = relationship(
         "User",
+        back_populates="positions"
+    )
+
+    strategy_id: Mapped[int] = mapped_column(ForeignKey("strategy.id"))
+    strategy: Mapped["Strategy"] = relationship(
+        "Strategy",
         back_populates="positions"
     )
 

@@ -17,9 +17,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import List
+import json
+import math
+import decimal
+from datetime import datetime
+from decimal import Decimal, Context, setcontext
 
 from gryffen.core.strategies.enum import GridType
+
+ctx = Context(prec=2, rounding=decimal.ROUND_DOWN)
+setcontext(ctx)
 
 
 class GridStrategy:
@@ -27,30 +34,72 @@ class GridStrategy:
     """This is a grid strategy class."""
 
     def __init__(
-        self, upper_bound, lower_bound, grid_size,
-        grid_type, stop_loss, trade_amount, owner_id
+        self, symbol, upper_bound, lower_bound, grid_size,
+        grid_type, max_drawdown, principal_balance, owner_id
     ) -> None:
-        """This is the constructor of the grid strategy class."""
-        assert upper_bound > lower_bound
+        """
+        This is the constructor of the grid strategy class.
 
+        @param symbol: symbol of the strategy
+        @param upper_bound: upper bound of the grid
+        @param lower_bound: lower bound of the grid
+        @param grid_size: size of the grid
+        @param grid_type: type of the grid
+        @param max_drawdown: max drawdown accepted by the strategy
+        @param principal_balance: trade amount of the strategy
+        @param owner_id: owner id of the strategy
+        """
+        assert upper_bound > lower_bound, \
+            f"Upper bound {upper_bound} must be " \
+            f"greater than lower bound {lower_bound}."
+
+        self.symbol = symbol
         self.upper_bound = upper_bound
         self.lower_bound = lower_bound
         self.grid_size = grid_size
         self.grid_type = grid_type
-        self.stop_loss = stop_loss
-        self.trade_amount = trade_amount
+        self.max_drawdown = max_drawdown
+        self.principal_balance = principal_balance
         self.owner_id = owner_id
+        self.created = datetime.utcnow()
 
-        self.grids: List = []
-        self.init_grid()
-
-    async def init_grid(self):
-        """This method is used to initialise the grid."""
-        if self.grid_type == GridType.ARITHMETIC:
+        # Initialize grids for the strategy based on grid type
+        # Arithmetic: [1, 2, 3, 4, 5]
+        # Geometric: [1, 2, 4, 8, 16]
+        if self.grid_type == GridType.ARITHMETIC.value:
             step = (self.upper_bound - self.lower_bound) / (self.grid_size - 1)
-            self.grids = [self.lower_bound + step * i for i in range(self.grid_size)]
-        elif self.grid_type == GridType.GEOMETRIC:
+            grids = [
+                Decimal(str(math.floor((self.lower_bound + step * i) * 100) / 100))
+                for i in range(int(self.grid_size))
+            ]
+        elif self.grid_type == GridType.GEOMETRIC.value:
             ratio = (self.upper_bound / self.lower_bound) ** (1 / self.grid_size - 1)
-            self.grids = [self.lower_bound * ratio ** i for i in range(self.grid_size)]
+            grids = [
+                Decimal(str(math.floor((self.lower_bound * ratio ** i) * 100) / 100))
+                for i in range(int(self.grid_size))
+            ]
         else:
             raise ValueError("Invalid grid type.")
+        self.grids = json.dumps(grids, default=str)
+
+    def __str__(self):
+        return "GridStrategy"
+
+    # async def init_grid(self):
+    #     """This method is used to initialise the grid."""
+    #     if self.grid_type == GridType.ARITHMETIC.value:
+    #         step = (self.upper_bound - self.lower_bound) / (self.grid_size - 1)
+    #         grids = [
+    #             Decimal(str(math.floor((self.lower_bound + step * i) * 100) / 100))
+    #             for i in range(int(self.grid_size))
+    #         ]
+    #     elif self.grid_type == GridType.GEOMETRIC.value:
+    #         ratio = (self.upper_bound / self.lower_bound) ** (1 / self.grid_size - 1)
+    #         grids = [
+    #             Decimal(str(math.floor((self.lower_bound * ratio ** i) * 100) / 100))
+    #             for i in range(int(self.grid_size))
+    #         ]
+    #     else:
+    #         raise ValueError("Invalid grid type.")
+    #
+    #     self.grids = json.dumps(grids, default=str)
