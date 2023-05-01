@@ -19,10 +19,10 @@
 
 import json
 import asyncio
-import bisect
 import websockets
 from asyncio import Task
-from typing import List, Any, Dict, Optional
+from fastapi import HTTPException, status
+from typing import List, Any, Dict, Optional, Set
 from sqlalchemy import select, ScalarResult
 from sqlalchemy.ext.asyncio import (
     AsyncSession, AsyncEngine, create_async_engine
@@ -33,18 +33,20 @@ from gryffen.core.websocket.schema import FinnhubWS
 from gryffen.db.models.strategies import Strategy
 from gryffen.core.strategies import GridStrategy, MartingaleStrategy
 from gryffen.core.strategies.enum import StrategyType
+from gryffen.logging import logger
 
 
 class Listener:
 
     def __init__(self):
         """This is the constructor for the Listener class."""
-        self.subscribers: List[str] = []
-        self.strategy_pool: List[Dict[str, Any]] = []
+        self.subscribers: Set[str] = set()
+        self.strategy_pool: Dict[str, List[Dict[str, Any]]] = {}
         self.strategies: ScalarResult or None = None
         self.listener_task: Task or None = None
         self.engine: AsyncEngine or None = None
         self.session: AsyncSession or None = None
+        self.socket: websockets.WebSocketClientProtocol or None = None
 
     async def init(self) -> None:
         """
@@ -60,6 +62,7 @@ class Listener:
         self.strategies = await self._get_strategies(self.session)
 
         if self.strategies:
+            # Subscribing to all strategies
             for strategy in self.strategies.fetchall():
                 if strategy.strategy_type == StrategyType.GRID:
                     _strategy = GridStrategy(
@@ -103,23 +106,25 @@ class Listener:
         assert grid_strategy or martingale_strategy, \
             "At least one strategy must not be None."
 
-        # Adding strategy to the strategy pool
-        # and sorting the list by symbol for faster future lookup
         s = grid_strategy if grid_strategy else martingale_strategy
-        pool_obj = {
+        for item in self.strategy_pool.get(s.symbol, []):
+            if item.get("owner_id") == s.owner_id:
+                raise HTTPException(
+                    status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                    detail=f"Strategy for symbol {s.symbol} already exists."
+                )
+
+        strategy_obj = {
             "owner_id": s.owner_id,
             "symbol": s.symbol,
             "timestamp_created": s.created,
             "strategy": s
         }
-        self.strategy_pool.append(pool_obj)
-        self.strategy_pool = sorted(
-            self.strategy_pool, key=lambda x: x["symbol"]
-        )
+        self.strategy_pool.setdefault(s.symbol, []).append(strategy_obj)
 
         # Adding trading symbol to the subscriber list
         # and sorting the list by symbol for faster lookup
-        self.subscribers.append(
+        self.subscribers.add(
             json.dumps({"type": "subscribe", "symbol": s.symbol})
         )
         self.subscribers = sorted(self.subscribers, key=lambda x: x["symbol"])
@@ -130,9 +135,22 @@ class Listener:
         @param strategy:
         @return: None
         """
+        # Pops out item from the strategy pool
+        for item in self.strategy_pool.get(strategy.symbol, []):
+            if item.get("owner_id") == strategy.owner_id:
+                self.strategy_pool[strategy.symbol].remove(item)
+                break
 
-        q = json.dumps({"type": "subscribe", "symbol": strategy.symbol})
-        self.subscribers.append(q)
+        # Check if the strategy pool still has any items
+        # for the symbol
+        if not self.strategy_pool.get(strategy.symbol, []):
+            self.subscribers.discard(
+                json.dumps({"type": "subscribe", "symbol": strategy.symbol})
+            )
+
+        # Send unsubscribe message to the websocket client
+        q = json.dumps({"type": "unsubscribe", "symbol": strategy.symbol})
+        await self.socket.send(q)
 
     async def start_listening(self) -> None:
         """
@@ -157,13 +175,18 @@ class Listener:
         async with websockets.connect(
             f'{settings.finnhub_ws_endpoint}?token={settings.finnhub_api_key}'
         ) as websocket:
+            self.socket = websocket
             while True:
                 for subscriber in self.subscribers:
                     await websocket.send(subscriber)
-                message = await websocket.recv()
-                ws_obj = FinnhubWS(message)
-                for signal in ws_obj.signals:
-                    print(f'{signal.get("symbol")} - {signal.get("price")}')
+                stream = await websocket.recv()
+                message = FinnhubWS(stream)
+                for signal in message.signals:
+                    logger.info(f'{signal.get("symbol")} - {signal.get("price")}')
+                    _strategies = await self._lookup_strategy_pool(signal.get("symbol"))
+                    for _strategy in _strategies:
+                        # TODO: Implement strategy logic
+                        pass
 
     async def _lookup_strategy_pool(self, symbol: str) -> List[Dict[str, Any]]:
         """
@@ -175,13 +198,7 @@ class Listener:
         @param symbol: Trading symbol
         @return: Strategy object
         """
-        left_index = bisect.bisect_left(
-            [s["symbol"] for s in self.strategy_pool], symbol
-        )
-        right_index = bisect.bisect_left(
-            [s["symbol"] for s in self.strategy_pool], symbol
-        )
-        return self.strategy_pool[left_index:right_index]
+        return self.strategy_pool.get(symbol, [])
 
     @staticmethod
     async def _get_strategies(session: AsyncSession) -> ScalarResult[Any]:

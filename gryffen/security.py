@@ -48,6 +48,7 @@ def hashing(password: str) -> hashlib.sha256:
     @param: password: user password
     @return: byte
     """
+    # return hashlib.sha256(password.encode("utf-8")).hexdigest().encode("ascii")
     salt = hashlib.sha256(os.urandom(60)).hexdigest().encode("ascii")
     password_hash = binascii.hexlify(
         hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 100000),
