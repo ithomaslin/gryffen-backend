@@ -26,6 +26,7 @@ Date: 22/04/2023
 
 from typing import Awaitable, Callable
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from gryffen.settings import settings
@@ -66,11 +67,26 @@ def register_startup_event(
     :return: function that actually performs actions.
     """
 
+    origins = [
+        "http://localhost",
+        "http://localhost:8080",
+        "http://localhost:3000",
+        "http://localhost:5173",
+    ]
+
     @app.on_event("startup")
     async def _startup() -> None:  # noqa: WPS430
         _setup_db(app)
         await global_listener.init()
         await global_listener.start_listening()
+
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=origins,
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
         pass
 
     return _startup

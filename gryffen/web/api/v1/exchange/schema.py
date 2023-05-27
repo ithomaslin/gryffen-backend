@@ -32,3 +32,6 @@ class ExchangeCreationSchema(BaseModel):
     name: str
     type: str
     account_id: str
+
+    class Config:
+        orm_mode = True

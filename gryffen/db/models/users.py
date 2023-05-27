@@ -27,7 +27,7 @@ Date: 22/04/2023
 from datetime import datetime
 from typing import List
 
-from sqlalchemy import Boolean, DateTime, Integer, String
+from sqlalchemy import Boolean, DateTime, Integer, String, LargeBinary
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from gryffen.db.base import Base
@@ -45,9 +45,12 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     public_id: Mapped[str] = mapped_column(String(50), unique=True)
-    username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    username: Mapped[str] = mapped_column(String(50), unique=True, nullable=True)
     email: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
-    password: Mapped[str] = mapped_column(String(1024), nullable=False)
+    password: Mapped[str] = mapped_column(LargeBinary, nullable=False)
+    first_name: Mapped[str] = mapped_column(String(50), nullable=True)
+    last_name: Mapped[str] = mapped_column(String(50), nullable=True)
+    register_via: Mapped[str] = mapped_column(String(50), nullable=True)
     access_token: Mapped[str] = mapped_column(String(1024), nullable=True, default=None)
     is_active: Mapped[bool] = mapped_column(Boolean(), default=False)
     is_superuser: Mapped[bool] = mapped_column(Boolean(), default=False)

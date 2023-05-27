@@ -80,26 +80,11 @@ class GridStrategy:
             ]
         else:
             raise ValueError("Invalid grid type.")
-        self.grids = json.dumps(grids, default=str)
+
+        self.grids = grids
 
     def __str__(self):
-        return "GridStrategy"
+        return json.dumps(self.grids, default=str)
 
-    # async def init_grid(self):
-    #     """This method is used to initialise the grid."""
-    #     if self.grid_type == GridType.ARITHMETIC.value:
-    #         step = (self.upper_bound - self.lower_bound) / (self.grid_size - 1)
-    #         grids = [
-    #             Decimal(str(math.floor((self.lower_bound + step * i) * 100) / 100))
-    #             for i in range(int(self.grid_size))
-    #         ]
-    #     elif self.grid_type == GridType.GEOMETRIC.value:
-    #         ratio = (self.upper_bound / self.lower_bound) ** (1 / self.grid_size - 1)
-    #         grids = [
-    #             Decimal(str(math.floor((self.lower_bound * ratio ** i) * 100) / 100))
-    #             for i in range(int(self.grid_size))
-    #         ]
-    #     else:
-    #         raise ValueError("Invalid grid type.")
-    #
-    #     self.grids = json.dumps(grids, default=str)
+    def __repr__(self):
+        return self.__str__()

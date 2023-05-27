@@ -33,15 +33,15 @@ from gryffen.web.api.utils import is_valid_email
 
 class UserCreationSchema(BaseModel):
 
-    username: str
     password: str
     email: EmailStr
     # In-class list to capture validation errors
     __errors: List = []
 
+    class Config:
+        orm_mode = True
+
     async def is_valid(self):
-        if not self.username or not len(self.username) > 3:
-            self.__errors.append("Username should have at least 4 characters.")
         if not self.email or not is_valid_email(self.email):
             self.__errors.append("Please enter a valid email address.")
         if not self.password or not len(self.password) >= 4:
@@ -52,7 +52,10 @@ class UserCreationSchema(BaseModel):
         return False
 
 
-class UserLoginSchema(BaseModel):
+class UserAuthenticationSchema(BaseModel):
 
-    username: str
+    email: str
     password: str
+
+    class Config:
+        orm_mode = True

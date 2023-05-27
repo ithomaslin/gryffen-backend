@@ -38,3 +38,6 @@ class StrategyCreationSchema(BaseModel):
     grid_size: int
     principal_balance: float
     max_drawdown: Optional[float] = None
+
+    class Config:
+        orm_mode = True

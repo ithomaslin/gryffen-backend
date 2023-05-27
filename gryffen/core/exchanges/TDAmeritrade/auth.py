@@ -92,3 +92,5 @@ async def update_access_token(user_id: User.id, db: AsyncSession) -> Dict[str, A
         "access_token": new_access_token.get(TokenType.ACCESS_TOKEN),
         "expires_at": new_date,
     }
+
+

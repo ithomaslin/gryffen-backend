@@ -34,4 +34,8 @@ class CredentialCreationSchema(BaseModel):
     exchange_id: int
     credential: str
     type: str
+    scope: str
     expires_at: Optional[datetime] = None
+
+    class  Config:
+        orm_mode = True

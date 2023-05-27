@@ -25,35 +25,44 @@ Date: 22/04/2023
 """
 
 import uuid
-from typing import Dict, Any
-from datetime import datetime
+import jwt
+from typing import Dict, Any, Optional
+from datetime import datetime, timedelta
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import HTTPException
+from fastapi import HTTPException, status, security, Depends
 
 from gryffen.db.models.users import User
-from gryffen.security import create_access_token
+from gryffen.db.dependencies import get_db_session
+from gryffen.security import create_access_token, verify_password
 from gryffen.db.handlers.activation import verify_activation_code
-from gryffen.web.api.v1.user.schema import UserCreationSchema
+from gryffen.web.api.v1.user.schema import UserCreationSchema, UserAuthenticationSchema
+from gryffen.settings import settings
 from gryffen.logging import logger
 
 
+oauth2_schema = security.OAuth2PasswordBearer(tokenUrl='/api/token')
+
+
 async def create_user(
-    submission: UserCreationSchema,
+    submission: UserCreationSchema | Dict,
+    register_via: str,
     db: AsyncSession,
-):
+) -> User:
     """
     User creation DB handler.
 
     @param submission: UserCreationSchema
+    @param register_via: String value of the medium used to register a user
     @param db: DB session
     @return: user
     """
     user = User(
-        username=submission.username,
+        username=submission.email,
         password=submission.password,
         email=submission.email,
         public_id=str(uuid.uuid4()),
+        register_via=register_via,
         timestamp_created=datetime.utcnow(),
         timestamp_updated=datetime.utcnow(),
     )
@@ -62,11 +71,13 @@ async def create_user(
     await db.refresh(user)
 
     logger.info(f"[{datetime.utcnow()}] User {user.username} created successfully.")
-
     return user
 
 
-async def check_user_exist(user: UserCreationSchema, db: AsyncSession):
+async def check_user_exist(
+    user: UserCreationSchema | Dict,
+    db: AsyncSession
+) -> bool:
     """
     A pre-check method to verify if a user is already existed.
 
@@ -74,16 +85,35 @@ async def check_user_exist(user: UserCreationSchema, db: AsyncSession):
     @param db:
     @return:
     """
-    stmt = select(User).where(
-        User.email == user.email or User.username == user.username,
-    )
+    stmt = select(User).where(User.email == user.email)
     result = await db.execute(stmt)
     if result.scalar():
-        logger.info(f"[{datetime.utcnow()}] User {user.username} already exists.")
+        logger.info(f"[{datetime.utcnow()}] User {user.email} already exists.")
         return True
 
-    logger.info(f"[{datetime.utcnow()}] User {user.username} does not exist.")
+    logger.info(f"[{datetime.utcnow()}] User {user.email} does not exist.")
     return False
+
+
+async def authenticate_user(
+    email: str,
+    password: str,
+    db: AsyncSession
+) -> Optional[User]:
+    """
+    User authenticate function.
+
+    @param email:
+    @param password:
+    @param db:
+    @return:
+    """
+    response: Dict = await get_user_by_email(email, db)
+    user = response.get("data")["user"]
+    if not user:
+        return None
+    if user and verify_password(password, user.password):
+        return user
 
 
 async def get_user_by_token(
@@ -116,6 +146,37 @@ async def get_user_by_token(
         "status": "failed",
         "message": "User not found.",
         "data": {},
+    }
+
+
+async def get_user_by_email(
+    user_email: str,
+    db: AsyncSession
+) -> Dict[str, Any]:
+    """
+    Fetch the info of a user by user email.
+
+    @param user_email:
+    @param db:
+    @return:
+    """
+    stmt = select(User).where(User.email == user_email)
+    usr: User = await db.scalar(stmt)
+    if usr:
+        logger.info(
+            f"[{datetime.utcnow()}] User {usr.username} fetched successfully."
+        )
+        return {
+            "status": "success",
+            "message": "User fetched successfully.",
+            "data": {
+                "user": usr,
+            },
+        }
+    return {
+        "status": "failed",
+        "message": "User not found.",
+        "data": None,
     }
 
 
@@ -243,3 +304,82 @@ async def create_new_access_token(
             "access_token": new_token,
         }
     }
+
+
+"""
+*** Beginning of OAuth methods ***
+
+This section is enclosed with all OAuth-related methods
+"""
+
+
+async def oauth_get_current_user(
+    token: str = Depends(oauth2_schema),
+    db: AsyncSession = Depends(get_db_session)
+):
+    try:
+        payload = jwt.decode(token, settings.gryffen_security_key, algorithms=["HS256"])
+        if datetime.fromtimestamp(payload.get("expires")) < datetime.utcnow():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Access token expired."
+            )
+        user: User = await db.scalar(
+            select(User).where(User.email == payload.get("email"))
+        )
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unable to authenticate."
+        )
+
+    return user
+
+
+async def oauth_create_token(
+    user: User
+) -> Dict[str, str]:
+    """
+    Generate oauth token for user.
+
+    @param user:
+    @return:
+    """
+    user_obj = UserAuthenticationSchema.from_orm(user)
+    refresh_token = jwt.encode(
+        user_obj.dict(),
+        settings.gryffen_security_key,
+        settings.access_token_hash_algorithm
+    )
+
+    expire = datetime.utcnow() + timedelta(
+        minutes=int(settings.oauth_token_duration_minute)
+    )
+    to_encode = user_obj.dict()
+    to_encode.update(expires=int(datetime.timestamp(expire)))
+    access_token = jwt.encode(
+        to_encode,
+        settings.gryffen_security_key,
+        settings.access_token_hash_algorithm
+    )
+
+    return dict(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        expires_in=int(settings.oauth_token_duration_minute),
+        token_type="bearer"
+    )
+
+
+async def oauth_refresh_token(
+    token: str,
+    db: AsyncSession
+):
+    payload = jwt.decode(token, settings.gryffen_security_key, algorithms=["HS256"])
+    user: User = await db.scalar(
+        select(User).where(User.email == payload.get("email"))
+    )
+    return await oauth_create_token(user)
+
+
+"""    End of OAuth methods    """

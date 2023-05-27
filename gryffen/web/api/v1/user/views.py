@@ -25,7 +25,7 @@ Date: 22/04/2023
 """
 
 from typing import Any, Dict
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status, security
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gryffen.db.dependencies import get_db_session
@@ -35,11 +35,11 @@ from gryffen.db.handlers.user import (
     create_user,
     get_user_by_token,
     promote_user,
-    create_new_access_token
+    create_new_access_token,
 )
 from gryffen.db.handlers.activation import (
     create_activation_code,
-    reissue_activation_code
+    reissue_activation_code,
 )
 from gryffen.security import decode_access_token
 from gryffen.web.api.v1.user.schema import UserCreationSchema
@@ -62,10 +62,17 @@ async def register(
     valid = await request.is_valid()
     user_exists = await check_user_exist(request, db)
     if user_exists:
-        return {"error": "Username or email has been registered."}
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"User email {request.email} has already been registered."
+        )
     if not valid:
-        return {"error": "Input is invalid"}
-    user = await create_user(request, db)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid input."
+        )
+
+    user = await create_user(request, "api", db)
     activation_code = await create_activation_code(
         user.id, user.username, user.email, db
     )
@@ -101,7 +108,7 @@ async def get_user(
 
 
 @router.get("/reissue-activation-code/{email}")
-async def reissue(
+async def reissue_activation(
     email: str,
     db: AsyncSession = Depends(get_db_session)
 ) -> Dict[str, Any]:
@@ -166,3 +173,6 @@ async def new_access_token(
     @return:
     """
     return await create_new_access_token(email, db)
+
+
+

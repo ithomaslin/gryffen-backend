@@ -1,15 +1,15 @@
 """empty message
 
-Revision ID: a671605ee569
+Revision ID: 142e993e7577
 Revises: 819cbf6e030b
-Create Date: 2023-04-29 10:43:55.636124
+Create Date: 2023-05-08 02:01:30.758392
 
 """
 import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "a671605ee569"
+revision = "142e993e7577"
 down_revision = "819cbf6e030b"
 branch_labels = None
 depends_on = None
@@ -21,9 +21,9 @@ def upgrade() -> None:
         "user",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("public_id", sa.String(length=50), nullable=False),
-        sa.Column("username", sa.String(length=50), nullable=False),
+        sa.Column("username", sa.String(length=50), nullable=True),
         sa.Column("email", sa.String(length=100), nullable=False),
-        sa.Column("password", sa.String(length=1024), nullable=False),
+        sa.Column("password", sa.LargeBinary(), nullable=False),
         sa.Column("access_token", sa.String(length=1024), nullable=True),
         sa.Column("is_active", sa.Boolean(), nullable=False),
         sa.Column("is_superuser", sa.Boolean(), nullable=False),
@@ -97,6 +97,7 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("credential", sa.String(length=200), nullable=False),
         sa.Column("type", sa.String(length=50), nullable=False),
+        sa.Column("scope", sa.String(length=50), nullable=False),
         sa.Column("is_active", sa.Boolean(), nullable=False),
         sa.Column("expires_at", sa.DateTime(), nullable=True),
         sa.Column("timestamp_created", sa.DateTime(), nullable=False),
@@ -118,12 +119,12 @@ def upgrade() -> None:
         "position",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("symbol", sa.String(length=50), nullable=False),
-        sa.Column("entry_price", sa.Numeric(precision=10, scale=4), nullable=False),
-        sa.Column("volume", sa.Numeric(precision=10, scale=4), nullable=False),
-        sa.Column("realized_profit", sa.Numeric(precision=10, scale=4), nullable=False),
         sa.Column("is_finalized", sa.Boolean(), nullable=False),
         sa.Column("timestamp_created", sa.DateTime(), nullable=False),
         sa.Column("timestamp_updated", sa.DateTime(), nullable=False),
+        sa.Column("entry_price", sa.Numeric(precision=10, scale=4), nullable=False),
+        sa.Column("volume", sa.Numeric(precision=10, scale=4), nullable=False),
+        sa.Column("realized_profit", sa.Numeric(precision=10, scale=4), nullable=False),
         sa.Column("owner_id", sa.Integer(), nullable=False),
         sa.Column("strategy_id", sa.Integer(), nullable=False),
         sa.ForeignKeyConstraint(

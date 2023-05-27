@@ -31,7 +31,6 @@ from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 
 import jwt
-from enum import Enum
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt import PyJWTError
@@ -45,19 +44,37 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 def hashing(password: str) -> hashlib.sha256:
     """
     Generate a hashed password.
+
     @param: password: user password
     @return: byte
     """
-    # return hashlib.sha256(password.encode("utf-8")).hexdigest().encode("ascii")
     salt = hashlib.sha256(os.urandom(60)).hexdigest().encode("ascii")
     password_hash = binascii.hexlify(
-        hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 100000),
+        hashlib.pbkdf2_hmac("sha512", password.encode("utf-8"), salt, 100000),
     )
     return salt + password_hash
 
 
+def verify_password(provided_password: str, stored_password: hashlib.sha256()) -> bool:
+    """
+    Verify a stored password against one provided by user
+    :param provided_password:
+    :param stored_password:
+    :return:
+    """
+    stored_password = stored_password.decode('ascii')
+    salt = stored_password[:64]
+    stored_password = stored_password[64:]
+    password_hash = hashlib.pbkdf2_hmac(
+        'sha512', provided_password.encode('utf-8'), salt.encode('ascii'), 100000
+    )
+    password_hash = binascii.hexlify(password_hash).decode('ascii')
+    return password_hash == stored_password
+
+
 def create_access_token(data: Dict, expire_delta: Optional[timedelta] = None) -> str:
     """
+    Create access token.
 
     @param data: {"id": "<USER_ID>", "username": "<USERNAME>", "email":"<EMAIL>"}
     @param expire_delta:
@@ -80,6 +97,12 @@ def create_access_token(data: Dict, expire_delta: Optional[timedelta] = None) ->
 
 
 def decode_access_token(token: str = Depends(oauth2_scheme)) -> Dict[str, Any]:
+    """
+    Decode access token.
+
+    @param token: of the user
+    @return:
+    """
     credential_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Credential invalid, make sure you have the valid credential.",

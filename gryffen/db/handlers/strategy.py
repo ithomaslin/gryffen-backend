@@ -82,7 +82,7 @@ async def create_strategy(
         upper_bound=submission.upper_bound,
         lower_bound=submission.lower_bound,
         grid_size=submission.grid_size,
-        grids=_strategy.grids,
+        grids=str(_strategy.grids),
         principal_balance=submission.principal_balance,
         max_drawdown=submission.max_drawdown,
         is_active=True,

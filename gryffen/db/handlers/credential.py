@@ -53,6 +53,7 @@ async def create_credential(
         exchange_id=submission.exchange_id,
         credential=submission.credential,
         type=submission.type,
+        scope=submission.scope,
         expires_at=submission.expires_at,
         timestamp_created=datetime.utcnow(),
         timestamp_updated=datetime.utcnow(),

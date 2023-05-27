@@ -77,6 +77,7 @@ class Settings(BaseSettings):
     # Access token
     access_token_hash_algorithm = os.getenv("ACCESS_TOKEN_HASH_ALGO")
     access_token_duration_minute = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
+    oauth_token_duration_minute = os.getenv("OAUTH_TOKEN_EXPIRE_MINUTES")
 
     # Variables for the database
     db_host: str = os.getenv("DB_HOST")
@@ -96,6 +97,7 @@ class Settings(BaseSettings):
     td_ameritrade_base_url = os.getenv("TD_API_BASE_URL")
     td_ameritrade_auth_endpoint = os.getenv("TD_API_AUTH_URL")
     td_ameritrade_orders_endpoint = os.getenv("TD_API_ORDERS_URL")
+    td_ameritrade_redirect_uri = os.getenv("TD_API_REDIRECT_URL")
 
     @property
     def db_url(self) -> URL:

@@ -32,6 +32,7 @@ class Credential(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     credential: Mapped[str] = mapped_column(String(200), nullable=False)
     type: Mapped[str] = mapped_column(String(50), nullable=False)
+    scope: Mapped[str] = mapped_column(String(50))
     is_active: Mapped[bool] = mapped_column(Boolean(), default=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     timestamp_created: Mapped[datetime] = mapped_column(DateTime)

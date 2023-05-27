@@ -24,8 +24,9 @@ Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
 Date: 22/04/2023
 """
 
+from urllib import parse
 from fastapi import APIRouter, Depends
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gryffen.db.dependencies import get_db_session
@@ -64,7 +65,7 @@ async def get(
 async def create(
     request: CredentialCreationSchema,
     current_user: Dict[str, Any] = Depends(decode_access_token),
-    db: AsyncSession = Depends(get_db_session),
+    db: AsyncSession = Depends(get_db_session)
 ):
     """
     API endpoint: create a credential for a given user by access token.
