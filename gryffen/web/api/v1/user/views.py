@@ -29,6 +29,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, security
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gryffen.db.dependencies import get_db_session
+from gryffen.web.api.utils import GriffinMailService
 from gryffen.db.handlers.user import (
     activate_user,
     check_user_exist,
@@ -36,13 +37,15 @@ from gryffen.db.handlers.user import (
     get_user_by_token,
     promote_user,
     create_new_access_token,
+    social_authenticate_user,
+    oauth_create_token
 )
 from gryffen.db.handlers.activation import (
     create_activation_code,
     reissue_activation_code,
 )
 from gryffen.security import decode_access_token
-from gryffen.web.api.v1.user.schema import UserCreationSchema
+from gryffen.web.api.v1.user.schema import UserCreationSchema, UserAuthenticationSchema
 
 router = APIRouter(prefix="/user")
 
@@ -72,19 +75,40 @@ async def register(
             detail=f"Invalid input."
         )
 
-    user = await create_user(request, "api", db)
-    activation_code = await create_activation_code(
+    user = await create_user(request, db)
+    activation_code_obj = await create_activation_code(
         user.id, user.username, user.email, db
     )
+
+    service = GriffinMailService()
+    service.send(
+        to=user.email,
+        code=activation_code_obj.activation_code
+    )
+
     return {
         "status": "success",
         "message": "User created.",
         "data": {
             "user": user,
-            "activation_code": activation_code,
+            "activation_code": activation_code_obj,
             "info": "Please activate your account within 15 minutes."
         }
     }
+
+
+@router.post("/social_login")
+async def social_login(
+    request: UserAuthenticationSchema,
+    db: AsyncSession = Depends(get_db_session),
+):
+    user = await social_authenticate_user(request.email, request.external_uid, db)
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_418_IM_A_TEAPOT,
+            detail="User is not activated yet, so here's a teapot."
+        )
+    return await oauth_create_token(user)
 
 
 @router.get("/")
@@ -175,4 +199,19 @@ async def new_access_token(
     return await create_new_access_token(email, db)
 
 
+@router.get("/has_account/{email}")
+async def has_registered(
+    email: str,
+    db: AsyncSession = Depends(get_db_session),
+):
+    request = UserCreationSchema(email=email, password='')
+    return await check_user_exist(request, db)
 
+
+@router.get("/test-email")
+async def send():
+    service = GriffinMailService()
+    service.send(
+        to="ithomaslin@gmail.com",
+        code="123456789"
+    )

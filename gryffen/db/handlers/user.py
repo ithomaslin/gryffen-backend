@@ -36,7 +36,9 @@ from gryffen.db.models.users import User
 from gryffen.db.dependencies import get_db_session
 from gryffen.security import create_access_token, verify_password
 from gryffen.db.handlers.activation import verify_activation_code
-from gryffen.web.api.v1.user.schema import UserCreationSchema, UserAuthenticationSchema
+from gryffen.web.api.v1.user.schema import (
+    UserCreationSchema, UserAuthenticationSchema
+)
 from gryffen.settings import settings
 from gryffen.logging import logger
 
@@ -45,15 +47,13 @@ oauth2_schema = security.OAuth2PasswordBearer(tokenUrl='/api/token')
 
 
 async def create_user(
-    submission: UserCreationSchema | Dict,
-    register_via: str,
+    submission: UserCreationSchema,
     db: AsyncSession,
 ) -> User:
     """
     User creation DB handler.
 
     @param submission: UserCreationSchema
-    @param register_via: String value of the medium used to register a user
     @param db: DB session
     @return: user
     """
@@ -62,7 +62,8 @@ async def create_user(
         password=submission.password,
         email=submission.email,
         public_id=str(uuid.uuid4()),
-        register_via=register_via,
+        register_via=submission.register_via,
+        external_uid=submission.external_uid,
         timestamp_created=datetime.utcnow(),
         timestamp_updated=datetime.utcnow(),
     )
@@ -75,7 +76,7 @@ async def create_user(
 
 
 async def check_user_exist(
-    user: UserCreationSchema | Dict,
+    user: UserCreationSchema,
     db: AsyncSession
 ) -> bool:
     """
@@ -113,6 +114,24 @@ async def authenticate_user(
     if not user:
         return None
     if user and verify_password(password, user.password):
+        return user
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Password mismatched."
+        )
+
+
+async def social_authenticate_user(
+    email: str,
+    uid: str,
+    db: AsyncSession
+) -> Optional[User]:
+    response: Dict = await get_user_by_email(email, db)
+    user = response.get("data")["user"]
+    if not user:
+        return None
+    if user and verify_password(uid, user.external_uid):
         return user
 
 
@@ -216,7 +235,10 @@ async def activate_user(
         await db.execute(stmt)
         await db.commit()
     else:
-        raise HTTPException(status_code=404, detail="User not found.")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The activation code is invalid or expired."
+        )
     return {
         "status": "success",
         "message": "User activated successfully.",

@@ -51,6 +51,7 @@ class User(Base):
     first_name: Mapped[str] = mapped_column(String(50), nullable=True)
     last_name: Mapped[str] = mapped_column(String(50), nullable=True)
     register_via: Mapped[str] = mapped_column(String(50), nullable=True)
+    external_uid: Mapped[str] = mapped_column(LargeBinary, nullable=True)
     access_token: Mapped[str] = mapped_column(String(1024), nullable=True, default=None)
     is_active: Mapped[bool] = mapped_column(Boolean(), default=False)
     is_superuser: Mapped[bool] = mapped_column(Boolean(), default=False)
@@ -93,6 +94,8 @@ class User(Base):
             if hasattr(value, "__iter__") and not isinstance(value, str):
                 value = value[0]
             if key == "password":
+                value = hashing(value)
+            if key == "external_uid":
                 value = hashing(value)
             setattr(self, key, value)
 

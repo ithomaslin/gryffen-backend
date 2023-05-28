@@ -35,7 +35,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from gryffen.web.api import docs, echo
 from gryffen.web.api.v1 import strategy, user, exchange, credential
 from gryffen.db.dependencies import get_db_session
-from gryffen.db.models.users import User
+from gryffen.web.api.utils import GriffinMailService
 from gryffen.db.handlers.user import (
     authenticate_user,
     oauth_create_token,
@@ -45,7 +45,7 @@ from gryffen.db.handlers.user import (
     create_user,
 )
 from gryffen.db.handlers.activation import create_activation_code
-from gryffen.web.api.v1.user.schema import UserAuthenticationSchema
+from gryffen.web.api.v1.user.schema import UserAuthenticationSchema, UserCreationSchema
 from gryffen.settings import settings
 
 
@@ -61,9 +61,9 @@ router.include_router(credential.router, prefix="/v1", tags=["credential", "v1"]
 
 @router.post("/register")
 async def register(
-    email: Annotated[str, Form()],
-    password: Annotated[str, Form()],
-    register_via: Annotated[str, Form()],
+    email: str = Form(...),
+    password: str = Form(...),
+    register_via: str = Form(...),
     db: AsyncSession = Depends(get_db_session)
 ):
     """
@@ -74,18 +74,24 @@ async def register(
     @param db:
     @return:
     """
-    submission = {"email": email, "password": password}
+    submission = UserCreationSchema(
+        email=email, password=password, register_via=register_via
+    )
     user_exists = await check_user_exist(submission, db)
     if user_exists:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"User email {email} has already been registered."
+            detail=f"Your email {email} has already been registered."
         )
 
-    usr = await create_user(submission, register_via, db)
+    usr = await create_user(submission, db)
     activation_code = await create_activation_code(
         usr.id, usr.username, usr.email, db
     )
+
+    mail_service = GriffinMailService()
+    mail_service.send("test message")
+
     return {
         "status": "success",
         "message": "User created.",
@@ -111,10 +117,23 @@ async def generate_oauth_token(
     usr = await authenticate_user(
         form_data.username, form_data.password, db
     )
+
     if not usr:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"User with email {form_data.username} is not found."
+        )
+
+    if usr.register_via == 'google.com':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"User is authenticated via Google Login."
+        )
+
+    if not usr.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_418_IM_A_TEAPOT,
+            detail="User is not activated yet, so here's a teapot."
         )
 
     return await oauth_create_token(usr)

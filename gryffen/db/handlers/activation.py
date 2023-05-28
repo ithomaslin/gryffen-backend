@@ -29,7 +29,7 @@ from typing import Dict, Any, Optional
 from datetime import datetime, timedelta
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 from schema import Schema
 
 from gryffen.db.models.users import User
@@ -153,7 +153,10 @@ async def verify_activation_code(
         )
     ).scalar_one_or_none()
     if not result:
-        raise HTTPException(status_code=404, detail="Activation code not found.")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Activation code not found."
+        )
 
     ac = ActivationCode()
     decoded_token = ac.decode(activation_code)
