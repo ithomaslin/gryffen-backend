@@ -24,29 +24,15 @@ Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
 Date: 22/04/2023
 """
 
-import jwt
 from fastapi.routing import APIRouter
-from fastapi import (
-    HTTPException, Depends, Form, security, status
-)
-from typing import Annotated
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from gryffen.web.api import docs, echo
-from gryffen.web.api.v1 import strategy, user, exchange, credential
-from gryffen.db.dependencies import get_db_session
-from gryffen.web.api.utils import GriffinMailService
-from gryffen.db.handlers.user import (
-    authenticate_user,
-    oauth_create_token,
-    oauth_get_current_user,
-    oauth_refresh_token,
-    check_user_exist,
-    create_user,
+from gryffen.web.api.v1 import (
+    user,
+    strategy,
+    exchange,
+    credential
 )
-from gryffen.db.handlers.activation import create_activation_code
-from gryffen.web.api.v1.user.schema import UserAuthenticationSchema, UserCreationSchema
-from gryffen.settings import settings
 
 
 router = APIRouter()
@@ -59,110 +45,18 @@ router.include_router(exchange.router, prefix="/v1", tags=["exchange", "v1"])
 router.include_router(credential.router, prefix="/v1", tags=["credential", "v1"])
 
 
-@router.post("/register")
-async def register(
-    email: str = Form(...),
-    password: str = Form(...),
-    register_via: str = Form(...),
-    db: AsyncSession = Depends(get_db_session)
-):
-    """
-
-    @param email:
-    @param password:
-    @param register_via:
-    @param db:
-    @return:
-    """
-    submission = UserCreationSchema(
-        email=email, password=password, register_via=register_via
-    )
-    user_exists = await check_user_exist(submission, db)
-    if user_exists:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"Your email {email} has already been registered."
-        )
-
-    usr = await create_user(submission, db)
-    activation_code = await create_activation_code(
-        usr.id, usr.username, usr.email, db
-    )
-
-    mail_service = GriffinMailService()
-    mail_service.send("test message")
-
-    return {
-        "status": "success",
-        "message": "User created.",
-        "data": {
-            "user": usr,
-            "activation_code": activation_code,
-            "info": "Please activate your account within 15 minutes."
-        }
-    }
-
-
-@router.post("/token")
-async def generate_oauth_token(
-    form_data: security.OAuth2PasswordRequestForm = Depends(),
-    db: AsyncSession = Depends(get_db_session)
-):
-    """
-
-    @param form_data:
-    @param db:
-    @return:
-    """
-    usr = await authenticate_user(
-        form_data.username, form_data.password, db
-    )
-
-    if not usr:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User with email {form_data.username} is not found."
-        )
-
-    if usr.register_via == 'google.com':
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"User is authenticated via Google Login."
-        )
-
-    if not usr.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_418_IM_A_TEAPOT,
-            detail="User is not activated yet, so here's a teapot."
-        )
-
-    return await oauth_create_token(usr)
-
-
-@router.get("/me")
-async def oauth_get_user(
-    usr: UserAuthenticationSchema = Depends(oauth_get_current_user)
-):
-    """
-
-    @param usr:
-    @return:
-    """
-    return usr
-
-
-@router.get("/refresh")
-async def oauth_refresh(
-    refresh_token: str,
-    db: AsyncSession = Depends(get_db_session)
-):
-    """
-
-    @param refresh_token:
-    @param db:
-    @return:
-    """
-    return await oauth_refresh_token(refresh_token, db)
+# @router.get("/refresh")
+# async def oauth_refresh(
+#     refresh_token: str,
+#     db: AsyncSession = Depends(get_db_session)
+# ):
+#     """
+#
+#     @param refresh_token:
+#     @param db:
+#     @return:
+#     """
+#     return await oauth_refresh_token(refresh_token, db)
 
 
 @router.get("/logout")

@@ -95,8 +95,6 @@ class User(Base):
                 value = value[0]
             if key == "password":
                 value = hashing(value)
-            if key == "external_uid":
-                value = hashing(value)
             setattr(self, key, value)
 
     def __repr__(self):

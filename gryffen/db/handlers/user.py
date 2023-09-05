@@ -23,7 +23,7 @@ This script is used to create DB handler functions for user-related actions.
 Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
 Date: 22/04/2023
 """
-
+import typing
 import uuid
 import jwt
 from typing import Dict, Any, Optional
@@ -110,9 +110,10 @@ async def authenticate_user(
     @return:
     """
     response: Dict = await get_user_by_email(email, db)
-    user = response.get("data")["user"]
-    if not user:
+    if not type(response.get("data")):
         return None
+
+    user = response.get("data")["user"]
     if user and verify_password(password, user.password):
         return user
     else:
@@ -286,7 +287,7 @@ async def promote_user(
     }
 
 
-async def create_new_access_token(
+async def create_new_api_key(
     email: str,
     db: AsyncSession
 ) -> Dict[str, Any]:

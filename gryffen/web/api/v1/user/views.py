@@ -25,32 +25,41 @@ Date: 22/04/2023
 """
 
 from typing import Any, Dict
-from fastapi import APIRouter, Depends, HTTPException, status, security
+from fastapi import APIRouter, Depends, HTTPException, Form, status, security
 from sqlalchemy.ext.asyncio import AsyncSession
+from deprecated import deprecated
 
+from gryffen.security import decode_access_token
 from gryffen.db.dependencies import get_db_session
 from gryffen.web.api.utils import GriffinMailService
-from gryffen.db.handlers.user import (
-    activate_user,
-    check_user_exist,
-    create_user,
-    get_user_by_token,
-    promote_user,
-    create_new_access_token,
-    social_authenticate_user,
-    oauth_create_token
+from gryffen.web.api.v1.user.schema import (
+    UserCreationSchema,
+    UserAuthenticationSchema
 )
 from gryffen.db.handlers.activation import (
     create_activation_code,
     reissue_activation_code,
 )
-from gryffen.security import decode_access_token
-from gryffen.web.api.v1.user.schema import UserCreationSchema, UserAuthenticationSchema
+from gryffen.db.handlers.user import (
+    authenticate_user,
+    activate_user,
+    check_user_exist,
+    create_user,
+    get_user_by_token,
+    promote_user,
+    create_new_api_key,
+    social_authenticate_user,
+    oauth_get_current_user,
+    oauth_create_token,
+    oauth_refresh_token,
+)
+
 
 router = APIRouter(prefix="/user")
 
 
-@router.post("/register")
+@deprecated(reason="This method should is only for development", version='1.1.0')
+@router.post("/api-registration")
 async def register(
     request: UserCreationSchema,
     db: AsyncSession = Depends(get_db_session),
@@ -97,11 +106,98 @@ async def register(
     }
 
 
-@router.post("/social_login")
+@router.post("/form-registration")
+async def register(
+    email: str = Form(...),
+    password: str = Form(...),
+    register_via: str = Form(...),
+    db: AsyncSession = Depends(get_db_session)
+):
+    """
+
+    @param email:
+    @param password:
+    @param register_via:
+    @param db:
+    @return:
+    """
+    submission = UserCreationSchema(
+        email=email, password=password, register_via=register_via
+    )
+    user_exists = await check_user_exist(submission, db)
+    if user_exists:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Your email {email} has already been registered."
+        )
+
+    usr = await create_user(submission, db)
+    activation_code = await create_activation_code(
+        usr.id, usr.username, usr.email, db
+    )
+
+    mail_service = GriffinMailService()
+    mail_service.send("test message", activation_code)
+
+    return {
+        "status": "success",
+        "message": "User created.",
+        "data": {
+            "user": usr,
+            "activation_code": activation_code,
+            "info": "Please activate your account within 15 minutes."
+        }
+    }
+
+
+@router.post("/token-login")
+async def login_for_oauth_token(
+    form_data: security.OAuth2PasswordRequestForm = Depends(),
+    db: AsyncSession = Depends(get_db_session)
+):
+    """
+    Loging user via oauth token
+
+    @param form_data:
+    @param db:
+    @return:
+    """
+    usr = await authenticate_user(
+        form_data.username, form_data.password, db
+    )
+
+    if not usr:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User with email {form_data.username} is not found."
+        )
+
+    if usr.register_via == 'google.com':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"User is authenticated via Google Login."
+        )
+
+    if not usr.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_418_IM_A_TEAPOT,
+            detail="User is not activated yet, so here's a teapot."
+        )
+
+    return await oauth_create_token(usr)
+
+
+@router.post("/social-login")
 async def social_login(
     request: UserAuthenticationSchema,
     db: AsyncSession = Depends(get_db_session),
 ):
+    """
+
+    @param request:
+    @param db:
+    @return:
+    """
     user = await social_authenticate_user(request.email, request.external_uid, db)
     if not user.is_active:
         raise HTTPException(
@@ -111,7 +207,21 @@ async def social_login(
     return await oauth_create_token(user)
 
 
-@router.get("/")
+@router.get("/oauth-refresh-token")
+async def oauth_refresh(
+    refresh_token: str,
+    db: AsyncSession = Depends(get_db_session)
+):
+    """
+
+    @param refresh_token:
+    @param db:
+    @return:
+    """
+    return await oauth_refresh_token(refresh_token, db)
+
+
+@router.get("/me")
 async def get_user(
     current_user: Dict[str, Any] = Depends(decode_access_token),
     db: AsyncSession = Depends(get_db_session),
@@ -129,6 +239,18 @@ async def get_user(
         "message": "User info fetched.",
         "data": {"user": user}
     }
+
+
+@router.get("/oauth/me")
+async def oauth_get_user(
+    usr: UserAuthenticationSchema = Depends(oauth_get_current_user)
+):
+    """
+
+    @param usr:
+    @return:
+    """
+    return usr
 
 
 @router.get("/reissue-activation-code/{email}")
@@ -184,8 +306,8 @@ async def promote(
     return await promote_user(current_user, public_id, db)
 
 
-@router.get("/new_access_token/{email}")
-async def new_access_token(
+@router.get("/new-api-key/{email}")
+async def get_new_api_key(
     email: str,
     db: AsyncSession = Depends(get_db_session)
 ) -> Dict[str, Any]:
@@ -196,10 +318,10 @@ async def new_access_token(
     @param db:
     @return:
     """
-    return await create_new_access_token(email, db)
+    return await create_new_api_key(email, db)
 
 
-@router.get("/has_account/{email}")
+@router.get("/has-account/{email}")
 async def has_registered(
     email: str,
     db: AsyncSession = Depends(get_db_session),
