@@ -58,7 +58,6 @@ from gryffen.db.handlers.user import (
 router = APIRouter(prefix="/user")
 
 
-@deprecated(reason="This method should is only for development", version='1.1.0')
 @router.post("/api-registration")
 async def register(
     request: UserCreationSchema,

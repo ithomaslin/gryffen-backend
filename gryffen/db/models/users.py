@@ -51,7 +51,7 @@ class User(Base):
     first_name: Mapped[str] = mapped_column(String(50), nullable=True)
     last_name: Mapped[str] = mapped_column(String(50), nullable=True)
     register_via: Mapped[str] = mapped_column(String(50), nullable=True)
-    external_uid: Mapped[str] = mapped_column(LargeBinary, nullable=True)
+    external_uid: Mapped[str] = mapped_column(String(100), nullable=True)
     access_token: Mapped[str] = mapped_column(String(1024), nullable=True, default=None)
     is_active: Mapped[bool] = mapped_column(Boolean(), default=False)
     is_superuser: Mapped[bool] = mapped_column(Boolean(), default=False)

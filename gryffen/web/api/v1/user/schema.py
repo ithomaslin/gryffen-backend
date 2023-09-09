@@ -37,6 +37,8 @@ class UserCreationSchema(BaseModel):
     password: str | None
     register_via: str | None
     external_uid: str | None
+    first_name: str | None
+    last_name: str | None
     # In-class list to capture validation errors
     __errors: List = []
 

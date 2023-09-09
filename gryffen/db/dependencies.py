@@ -25,8 +25,8 @@ Date: 22/04/2023
 """
 
 from typing import AsyncGenerator
-
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import SQLAlchemyError
 from starlette.requests import Request
 
 
@@ -41,6 +41,9 @@ async def get_db_session(request: Request) -> AsyncGenerator[AsyncSession, None]
 
     try:  # noqa: WPS501
         yield session
+    except SQLAlchemyError as e:
+        await session.rollback()
+        raise e
     finally:
         await session.commit()
         await session.close()
