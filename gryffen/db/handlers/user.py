@@ -34,7 +34,7 @@ from fastapi import HTTPException, status, security, Depends
 
 from gryffen.db.models.users import User
 from gryffen.db.dependencies import get_db_session
-from gryffen.security import create_access_token, verify_password
+from gryffen.security import create_access_token, verify_password, hashing
 from gryffen.db.handlers.activation import verify_activation_code
 from gryffen.web.api.v1.user.schema import (
     UserCreationSchema, UserAuthenticationSchema
