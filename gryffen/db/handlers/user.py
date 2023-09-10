@@ -112,6 +112,8 @@ async def authenticate_user(
     response: Dict = await get_user_by_email(email, db)
     if not type(response.get("data")):
         return None
+    elif len(response.get("data")) == 0:
+        return None
 
     user = response.get("data")["user"]
     if user and verify_password(password, user.password):
@@ -196,7 +198,7 @@ async def get_user_by_email(
     return {
         "status": "failed",
         "message": "User not found.",
-        "data": None,
+        "data": {},
     }
 
 
