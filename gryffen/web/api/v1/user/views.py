@@ -32,6 +32,7 @@ from deprecated import deprecated
 from gryffen.security import decode_access_token
 from gryffen.db.dependencies import get_db_session
 from gryffen.web.api.utils import GriffinMailService
+from gryffen.web.api.utils import private_method
 from gryffen.web.api.v1.user.schema import (
     UserCreationSchema,
     UserAuthenticationSchema
@@ -58,6 +59,7 @@ from gryffen.db.handlers.user import (
 router = APIRouter(prefix="/user")
 
 
+@private_method
 @router.post("/api-registration")
 async def register(
     request: UserCreationSchema,
@@ -105,6 +107,7 @@ async def register(
     }
 
 
+@private_method
 @router.post("/form-registration")
 async def register(
     email: str = Form(...),
@@ -149,6 +152,7 @@ async def register(
     }
 
 
+@private_method
 @router.post("/token-login")
 async def login_for_oauth_token(
     form_data: security.OAuth2PasswordRequestForm = Depends(),
@@ -186,6 +190,7 @@ async def login_for_oauth_token(
     return await oauth_create_token(usr)
 
 
+@private_method
 @router.post("/social-login")
 async def social_login(
     request: UserAuthenticationSchema,
@@ -206,6 +211,7 @@ async def social_login(
     return await oauth_create_token(user)
 
 
+@private_method
 @router.get("/oauth-refresh-token")
 async def oauth_refresh(
     refresh_token: str,
@@ -240,6 +246,7 @@ async def get_user(
     }
 
 
+@private_method
 @router.get("/oauth/me")
 async def oauth_get_user(
     usr: UserAuthenticationSchema = Depends(oauth_get_current_user)
@@ -252,6 +259,7 @@ async def oauth_get_user(
     return usr
 
 
+@private_method
 @router.get("/reissue-activation-code/{email}")
 async def reissue_activation(
     email: str,
@@ -272,6 +280,7 @@ async def reissue_activation(
     }
 
 
+@private_method
 @router.get("/activate/{activation_code}")
 async def activate(
     activation_code: str,
@@ -287,6 +296,7 @@ async def activate(
     return await activate_user(activation_code, db)
 
 
+@private_method
 @router.post("/promote/{public_id}")
 async def promote(
     public_id: str,
@@ -305,6 +315,7 @@ async def promote(
     return await promote_user(current_user, public_id, db)
 
 
+@private_method
 @router.get("/new-api-key/{email}")
 async def get_new_api_key(
     email: str,
@@ -320,6 +331,7 @@ async def get_new_api_key(
     return await create_new_api_key(email, db)
 
 
+@private_method
 @router.get("/has-account/{email}")
 async def has_registered(
     email: str,
@@ -327,12 +339,3 @@ async def has_registered(
 ):
     request = UserCreationSchema(email=email, password='')
     return await check_user_exist(request, db)
-
-
-@router.get("/test-email")
-async def send():
-    service = GriffinMailService()
-    service.send(
-        to="ithomaslin@gmail.com",
-        code="123456789"
-    )

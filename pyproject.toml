@@ -38,6 +38,7 @@ google-auth = "^2.19.0"
 google-api-python-client = "^2.87.0"
 google-auth-oauthlib = "^1.0.0"
 deprecated = "^1.2.14"
+google = "^3.0.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.2.1"

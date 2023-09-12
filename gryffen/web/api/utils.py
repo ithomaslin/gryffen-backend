@@ -8,9 +8,28 @@ from dotenv import load_dotenv
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+from functools import wraps
+from fastapi import Request, HTTPException, status
+
+from gryffen.settings import Settings
 
 
 load_dotenv()
+
+
+def private_method(func):
+
+    async def wrapper(request: Request, *args, **kwargs):
+        client_ip = request.client.host
+        if client_ip in Settings.front_end_ip_address:
+            return func(*args, **kwargs)
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied."
+            )
+
+    return wrapper
 
 
 def is_valid_email(email):

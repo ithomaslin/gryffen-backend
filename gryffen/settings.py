@@ -80,11 +80,11 @@ class Settings(BaseSettings):
     oauth_token_duration_minute = os.getenv("OAUTH_TOKEN_EXPIRE_MINUTES")
 
     # Variables for the database
-    db_host: str = os.getenv("DB_HOST")
-    db_port: int = os.getenv("DB_PORT")
-    db_user: str = os.getenv("DB_USER")
-    db_pass: str = os.getenv("DB_PASS")
-    db_base: str = os.getenv("DB_NAME")
+    db_host: str = os.getenv("PROD_DB_HOST")
+    db_port: int = os.getenv("PROD_DB_PORT")
+    db_user: str = os.getenv("PROD_DB_USER")
+    db_pass: str = os.getenv("PROD_DB_PASS")
+    db_base: str = os.getenv("PROD_DB_NAME")
     db_echo: bool = False
 
     # Finnhub
@@ -98,6 +98,11 @@ class Settings(BaseSettings):
     td_ameritrade_auth_endpoint = os.getenv("TD_API_AUTH_URL")
     td_ameritrade_orders_endpoint = os.getenv("TD_API_ORDERS_URL")
     td_ameritrade_redirect_uri = os.getenv("TD_API_REDIRECT_URL")
+
+    front_end_ip_address = [
+        os.getenv("FRONT_END_TEST_URL"),
+        os.getenv("FRONT_END_IP_ADDRESS"),
+    ]
 
     @property
     def db_url(self) -> URL:
