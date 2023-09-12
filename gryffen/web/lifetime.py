@@ -72,6 +72,7 @@ def register_startup_event(
         "http://localhost:8080",
         "http://localhost:3000",
         "http://localhost:5173",
+        "https://avis.neat.tw",
     ]
 
     @app.on_event("startup")
