@@ -26,18 +26,19 @@ from gryffen.web.application import get_app
 app = get_app()
 handler = Mangum(app=app)
 
-# def main() -> None:
-#     """Entrypoint of the application."""
-#     uvicorn.run(
-#         "gryffen.web.application:get_app",
-#         workers=settings.workers_count,
-#         host=settings.host,
-#         port=settings.port,
-#         reload=settings.reload,
-#         log_level=settings.log_level.value.lower(),
-#         factory=True,
-#     )
-#
-#
-# if __name__ == "__main__":
-#     main()
+
+def main() -> None:
+    """Entrypoint of the application."""
+    uvicorn.run(
+        "gryffen.web.application:get_app",
+        workers=settings.workers_count,
+        host=settings.host,
+        port=settings.port,
+        reload=settings.reload,
+        log_level=settings.log_level.value.lower(),
+        factory=True,
+    )
+
+
+if __name__ == "__main__":
+    main()
