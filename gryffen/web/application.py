@@ -29,6 +29,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.responses import UJSONResponse
 from fastapi.staticfiles import StaticFiles
+from mangum import Mangum
 
 from gryffen.logging import configure_logging
 from gryffen.web.api.router import router
@@ -37,7 +38,7 @@ from gryffen.web.lifetime import register_shutdown_event, register_startup_event
 APP_ROOT = Path(__file__).parent.parent
 
 
-def get_app() -> FastAPI:
+def get_app():
     """
     Get FastAPI application.
 
@@ -69,4 +70,8 @@ def get_app() -> FastAPI:
         name="static",
     )
 
+    # Adds mangum handler.
+    handler = Mangum(app=app)
+
+    # Returns application.
     return app

@@ -122,8 +122,8 @@ async def client(
     """
     Fixture that creates client for requesting server.
 
-    :param fastapi_app: the application.
-    :yield: client for the app.
+    @param fastapi_app: the application.
+    @param anyio_backend: backend for anyio.
     """
     async with AsyncClient(app=fastapi_app, base_url="http://test") as ac:
         yield ac

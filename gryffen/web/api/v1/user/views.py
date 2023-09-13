@@ -59,6 +59,14 @@ from gryffen.db.handlers.user import (
 router = APIRouter(prefix="/user")
 
 
+@router.get("/")
+async def user_root_route():
+    """
+    This route is used to test if the API is working.
+    """
+    return {"message": "User API is working."}
+
+
 @private_method
 @router.post("/api-registration")
 async def register(

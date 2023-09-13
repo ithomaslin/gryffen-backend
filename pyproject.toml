@@ -20,7 +20,6 @@ ujson = "^5.7.0"
 SQLAlchemy = {version = "^2.0.0", extras = ["asyncio"]}
 alembic = "^1.9.2"
 aiomysql = "^0.1.1"
-mysqlclient = "^2.1.1"
 aiofiles = "^22.1.0"
 httptools = "^0.5.0"
 loguru = "^0.6.0"
@@ -40,6 +39,7 @@ google-auth-oauthlib = "^1.0.0"
 deprecated = "^1.2.14"
 google = "^3.0.0"
 mangum = "^0.17.0"
+pre-commit = "^3.4.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.2.1"

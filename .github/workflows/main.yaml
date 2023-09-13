@@ -1,0 +1,50 @@
+name: Gryffen back-end CI/CD
+
+on:
+  # Trigger the workflow on push
+  push:
+    branches:
+      - main
+
+jobs:
+  CI:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.11
+
+      - name: Install Python virtual env
+        run: pip3 install virtualenv
+
+      - name: Virtual env
+        uses: actions/cache@v2
+        id: cache-venv
+        with:
+          path: venv
+          key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-venv-
+
+      - name: Activate virtual env
+        run: python -m venv venv && source venv/bin/activate && pip3 install -r requirements.txt
+
+#      - name: Run tests
+#        run: . venv/bin/activate && pytest
+
+      - name: Create archive of dependencies
+        run: |
+          cd ./venv/lib/python3.11/site-packages
+          zip -r9 ../../../../api.zip .
+
+      - name: Add API files to the zip file
+        run: cd ./gryffen && zip -g ../api.zip -r .
+
+      - name: Upload zip file artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: api
+          path: api.zip
