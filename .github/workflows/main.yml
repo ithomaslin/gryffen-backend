@@ -48,10 +48,9 @@ jobs:
         run: |
           cd ./venv/lib/python3.11/site-packages
           zip -r9 ../../../../api.zip .
-          cd
 
       - name: Add API files to the zip file
-        run: cd gryffen && zip -g api.zip -r gryffen/
+        run: zip -g api.zip -r gryffen
 
       - name: Upload zip file artifact
         uses: actions/upload-artifact@v2
