@@ -24,7 +24,7 @@ from gryffen.settings import settings
 from gryffen.web.application import get_app
 
 app = get_app()
-handler = Mangum(app=app)
+handler = Mangum(app, lifespan="off")
 
 
 def main() -> None:
