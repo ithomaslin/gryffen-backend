@@ -23,9 +23,6 @@ from mangum import Mangum
 from gryffen.settings import settings
 from gryffen.web.application import get_app
 
-app = get_app()
-handler = Mangum(app, lifespan="off")
-
 
 def main() -> None:
     """Entrypoint of the application."""
@@ -42,3 +39,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+    handler = Mangum(get_app())

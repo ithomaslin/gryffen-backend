@@ -37,7 +37,7 @@ from gryffen.web.lifetime import register_shutdown_event, register_startup_event
 APP_ROOT = Path(__file__).parent.parent
 
 
-def get_app():
+def get_app() -> FastAPI:
     """
     Get FastAPI application.
 
