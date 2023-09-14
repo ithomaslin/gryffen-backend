@@ -39,4 +39,5 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-    handler = Mangum(get_app())
+
+handler = Mangum(get_app())
