@@ -1,13 +1,13 @@
 [tool.poetry]
 name = "gryffen"
 version = "0.2.0"
-description = ""
+description = "A FastAPI app that automates trading strategies with different brokers."
 authors = [
-
+    "Thomas Lin <ithomaslin@gmail.com>",
+    "Thomas Lin <thomas@neat.tw>"
 ]
-maintainers = [
+license = "MIT"
 
-]
 readme = "README.md"
 
 [tool.poetry.dependencies]
