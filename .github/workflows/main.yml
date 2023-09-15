@@ -41,7 +41,7 @@ jobs:
 
       # Step-4 Build a Virtual ENV, but only if it doesn't already exist
       - name: Activate Virtual ENV
-        run: python -m venv venv && source venv/bin/activate && pip3 install -r requirements.txt && pip3 install -e .
+        run: python -m venv venv && source venv/bin/activate && pip3 install -r requirements.txt && cd gryffen && pip3 install -e .
         if: steps.cache-venv.outputs.cache-hit != 'true'
 
       - name: Create archive of dependencies
