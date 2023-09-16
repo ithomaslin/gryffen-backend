@@ -1,11 +1,13 @@
-FROM python:3.9.6-slim-buster
+FROM public.ecr.aws/lambda/python:3.11 as prod
 RUN apt-get update && apt-get install -y \
   default-libmysqlclient-dev \
   gcc \
+  pkg-config \
   && rm -rf /var/lib/apt/lists/*
 
+#WORKDIR /app/src
 
-RUN pip install poetry==1.2.2
+RUN pip install poetry==1.4.2
 
 # Configuring poetry
 RUN poetry config virtualenvs.create false
@@ -15,7 +17,7 @@ COPY pyproject.toml poetry.lock /app/src/
 WORKDIR /app/src
 
 # Installing requirements
-RUN poetry install
+RUN poetry install --only main
 # Removing gcc
 RUN apt-get purge -y \
   gcc \
@@ -23,6 +25,10 @@ RUN apt-get purge -y \
 
 # Copying actuall application
 COPY . /app/src/
-RUN poetry install
+RUN poetry install --only main
 
 CMD ["/usr/local/bin/python", "-m", "gryffen"]
+
+FROM prod as dev
+
+RUN poetry install

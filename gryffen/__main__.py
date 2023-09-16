@@ -18,10 +18,8 @@
 # limitations under the License.
 
 import uvicorn
-from mangum import Mangum
 
 from gryffen.settings import settings
-from gryffen.web.application import get_app
 
 
 def main() -> None:
@@ -39,5 +37,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-handler = Mangum(get_app())

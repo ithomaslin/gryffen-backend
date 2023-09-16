@@ -51,7 +51,7 @@ class GriffinMailService:
     def __init__(self):
         base_directory = os.path.dirname(os.path.abspath(__file__))
         credential_filepath = os.path.join(
-            base_directory, os.environ["SERVICE_ACCOUNT_KEY"]
+            base_directory, os.getenv("SERVICE_ACCOUNT_KEY")
         )
         api_scope = ['https://mail.google.com']
         from_email = 'griffin@neat.tw'
@@ -63,7 +63,7 @@ class GriffinMailService:
     def send(self, to, code):
         try:
             message = MIMEMultipart('alternative')
-            message['From'] = os.environ["EMAIL_FROM"]
+            message['From'] = os.getenv("EMAIL_FROM")
             message['To'] = to
             message['Subject'] = "Thank you for choosing Griffin."
             html = self.template(code, to)
@@ -83,7 +83,7 @@ class GriffinMailService:
 
     @staticmethod
     def template(activation_code: str, email: str):
-        activation_link = f"{os.environ['FRONT_END_BASE_URL']}/activation?code={activation_code}"
+        activation_link = f"{os.getenv('FRONT_END_BASE_URL')}/activation?code={activation_code}"
         ldap = email.split("@")[0]
         return f"""
             <!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional //EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
