@@ -14,7 +14,7 @@ services:
     env_file:
       - ./.env
     ports:
-      - "8007:8000"
+      - "8000:8000"
 #    environment:
 #      GRYFFEN_HOST: 0.0.0.0
 #      GRYFFEN_DB_HOST: gryffen-aws.cogxcxc3k8tx.us-east-1.rds.amazonaws.com
