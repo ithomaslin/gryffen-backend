@@ -1,5 +1,8 @@
 ### Python template
 
+# Mac DS store
+.DS_Store
+
 .idea/
 .vscode/
 # Byte-compiled / optimized / DLL files
