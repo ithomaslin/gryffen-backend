@@ -34,7 +34,6 @@ from gryffen.web.api.v1 import (
     credential
 )
 
-
 router = APIRouter()
 
 router.include_router(docs.router)
@@ -45,23 +44,8 @@ router.include_router(exchange.router, prefix="/v1", tags=["exchange", "v1"])
 router.include_router(credential.router, prefix="/v1", tags=["credential", "v1"])
 
 
-# @router.get("/refresh")
-# async def oauth_refresh(
-#     refresh_token: str,
-#     db: AsyncSession = Depends(get_db_session)
-# ):
-#     """
-#
-#     @param refresh_token:
-#     @param db:
-#     @return:
-#     """
-#     return await oauth_refresh_token(refresh_token, db)
-
-
-@router.get("/logout")
-async def logout():
+@router.get("/")
+async def welcome():
     return {
-        "status": "success",
-        "message": "You've logged out successfully."
+        "message": "Welcome to Gryffen API!"
     }

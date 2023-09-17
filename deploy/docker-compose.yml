@@ -15,13 +15,6 @@ services:
       - ./.env
     ports:
       - "8000:8000"
-#    environment:
-#      GRYFFEN_HOST: 0.0.0.0
-#      GRYFFEN_DB_HOST: gryffen-aws.cogxcxc3k8tx.us-east-1.rds.amazonaws.com
-#      GRYFFEN_DB_PORT: 3306
-#      GRYFFEN_DB_USER: admin
-#      GRYFFEN_DB_PASS: LsYWbXpKPKOq6Zl622Og
-#      GRYFFEN_DB_BASE: gryffen-backend
 
 #  db:
 #    image: mysql:8.0.34
