@@ -58,6 +58,8 @@ jobs:
           service: ${{ env.SERVICE }}
           region: ${{ env.REGION }}
           image: ithomaslin/gryffen:${{ github.sha }}
+          labels:
+            port=8000
 
       - name: Show Output
         run: echo ${{ steps.deploy.outputs.url }}
