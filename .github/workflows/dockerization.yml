@@ -71,7 +71,7 @@ jobs:
               SERVICE_ACCOUNT_KEY=${{ secrets.SERVICE_ACCOUNT_KEY }},
               ACCESS_TOKEN_HASH_ALGO=${{ env.ACCESS_TOKEN_HASH_ALGO }},
               ACCESS_TOKEN_EXPIRE_MINUTES=${{ env.ACCESS_TOKEN_EXPIRE_MINUTES }},
-              OAUTH_TOKEN_EXPIRE_MINUTES=${{ emv.OAUTH_TOKEN_EXPIRE_MINUTES }},
+              OAUTH_TOKEN_EXPIRE_MINUTES=${{ env.OAUTH_TOKEN_EXPIRE_MINUTES }},
               DB_HOST=${{ secrets.DB_HOST }},
               DB_USER=${{ secrets.DB_USER }},
               DB_PASS=${{ secrets.DB_PASS }},
