@@ -47,7 +47,7 @@ jobs:
         id: deploy
         uses: google-github-actions/deploy-cloudrun@v0
         with:
-          service: ${{ env.GCP_SERVICE_REGION }}
+          service: ${{ env.GCP_CLOUD_RUN_SERVICE_NAME }}
           region: ${{ env.GCP_SERVICE_REGION }}
           image: ${{ secrets.DOCKER_HUB_USERNAME }}/gryffen:$(date +'%Y-%m-%d')
 
