@@ -13,27 +13,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: 'actions/checkout@v3'
     - name: Build the Docker image
-      run: docker build . --file deploy/Dockerfile --tag ithomaslin/gryffen:$(date +'%Y-%m-%d') --platform linux/amd64
+      run: docker build . --file deploy/Dockerfile --tag "ithomaslin/gryffen:${{ github.sha }}" --platform linux/amd64
 
     - name: Log in to Docker Hub
-      uses: docker/login-action@v3
+      uses: 'docker/login-action@v3'
       with:
         username: ${{ secrets.DOCKER_HUB_USERNAME }}
         password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
     - name: Push the Docker image to Docker Hub repo
-      run: |
-        docker push ithomaslin/gryffen:$(date +'%Y-%m-%d')
-        IMAGE_NAME=ithomaslin/gryffen:$(date +'%Y-%m-%d')
-        echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
-
-    - name: Exporting variable for next job
-      uses: UnlyEd/github-action-store-variable@v3
-      with:
-        variables: |
-          IMAGE_NAME=${{ env.IMAGE_NAME }}
+      run: docker push "ithomaslin/gryffen:${{ github.sha }}"
 
   deploy:
 
@@ -43,7 +34,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: 'actions/checkout@v2'
 
       - name: Google Auth
         id: auth
@@ -51,19 +42,13 @@ jobs:
         with:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
-      - name: Import variable IMAGE_NAME
-        uses: UnlyEd/github-action-store-variable@v3
-        with:
-          variables: |
-            IMAGE_NAME
-
       - name: Deploy to Google Cloud Run
         id: deploy
-        uses: google-github-actions/deploy-cloudrun@v0
+        uses: 'google-github-actions/deploy-cloudrun@v0'
         with:
           service: ${{ env.GCP_CLOUD_RUN_SERVICE_NAME }}
           region: ${{ env.GCP_SERVICE_REGION }}
-          image: $IMAGE_NAME
+          image: ithomaslin/gryffen:${{ github.sha }}
 
       - name: Show Output
         run: echo ${{ steps.deploy.outputs.url }}
