@@ -47,18 +47,19 @@ jobs:
 
       - name: Google Auth
         id: auth
-        uses: 'google-github-actions/auth@v0'
+        uses: 'google-github-actions/auth@v1'
         with:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
       - name: Deploy to Google Cloud Run
         id: deploy
-        uses: 'google-github-actions/deploy-cloudrun@v0'
+        uses: 'google-github-actions/deploy-cloudrun@v1'
         with:
           service: ${{ env.SERVICE }}
           region: ${{ env.REGION }}
           image: ithomaslin/gryffen:${{ github.sha }}
-          port: 8000
+          labels:
+            --port=8000
           env_vars: |
             GRYFFEN_RELOAD=${{ vars.GRYFFEN_RELOAD }}
             HASH_ITERATION=${{ vars.HASH_ITERATION }}
