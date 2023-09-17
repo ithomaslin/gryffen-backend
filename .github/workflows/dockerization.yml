@@ -58,36 +58,35 @@ jobs:
           service: ${{ env.SERVICE }}
           region: ${{ env.REGION }}
           image: ithomaslin/gryffen:${{ github.sha }}
-          labels:
-            --port=8000
-            --set-env-vars=[
-              GRYFFEN_RELOAD=${{ vars.GRYFFEN_RELOAD }},
-              GRYFFEN_SECRET_KEY=${{ secrets.GRYFFEN_SECRET_KEY }},
-              HASH_ITERATION=${{ vars.HASH_ITERATION }},
-              NUM_BENCHMARK=${{ vars.NUM_BENCHMARK }},
-              UNIX_TIMESTAMP_NEVER_EXPIRE=${{ vars.UNIX_TIMESTAMP_NEVER_EXPIRE }},
-              FRONT_END_BASE_URL=${{ vars.FRONT_END_BASE_URL }},
-              EMAIL_FROM=${{ vars.EMAIL_FROM }},
-              SERVICE_ACCOUNT_KEY=${{ secrets.SERVICE_ACCOUNT_KEY }},
-              ACCESS_TOKEN_HASH_ALGO=${{ vars.ACCESS_TOKEN_HASH_ALGO }},
-              ACCESS_TOKEN_EXPIRE_MINUTES=${{ vars.ACCESS_TOKEN_EXPIRE_MINUTES }},
-              OAUTH_TOKEN_EXPIRE_MINUTES=${{ vars.OAUTH_TOKEN_EXPIRE_MINUTES }},
-              DB_HOST=${{ secrets.DB_HOST }},
-              DB_USER=${{ secrets.DB_USER }},
-              DB_PASS=${{ secrets.DB_PASS }},
-              DB_NAME=${{ secrets.DB_NAME }},
-              DB_PORT=${{ secrets.DB_PORT }},
-              FINNHUB_API_KEY=${{ secrets.FINNHUB_API_KEY }},
-              FINNHUB_WEBSOCKET_URI=${{ vars.FINNHUB_WEBSOCKET_URI }},
-              TD_API_AUTH_GATEWAY=${{ vars.TD_API_AUTH_GATEWAY }},
-              TD_API_CONSUMER_KEY=${{ secrets.TD_API_CONSUMER_KEY }},
-              TD_API_REDIRECT_URL=${{ vars.TD_API_REDIRECT_URL }},
-              TD_API_BASE_URL=${{ vars.TD_API_BASE_URL }},
-              TD_API_AUTH_URL=${{ vars.TD_API_AUTH_URL }},
-              TD_API_ORDERS_URL=${{ vars.TD_API_ORDERS_URL }},
-              ALPACA_API_KEY=${{ secrets.ALPACA_API_KEY }},
-              ALPACA_SECRET_KEY=${{ secrets.ALPACA_SECRET_KEY }}
-            ]
+          port: 8000
+          env_vars: |
+            GRYFFEN_RELOAD=${{ vars.GRYFFEN_RELOAD }}
+            HASH_ITERATION=${{ vars.HASH_ITERATION }}
+            NUM_BENCHMARK=${{ vars.NUM_BENCHMARK }}
+            UNIX_TIMESTAMP_NEVER_EXPIRE=${{ vars.UNIX_TIMESTAMP_NEVER_EXPIRE }}
+            FRONT_END_BASE_URL=${{ vars.FRONT_END_BASE_URL }}
+            EMAIL_FROM=${{ vars.EMAIL_FROM }}
+            ACCESS_TOKEN_HASH_ALGO=${{ vars.ACCESS_TOKEN_HASH_ALGO }}
+            ACCESS_TOKEN_EXPIRE_MINUTES=${{ vars.ACCESS_TOKEN_EXPIRE_MINUTES }}
+            OAUTH_TOKEN_EXPIRE_MINUTES=${{ vars.OAUTH_TOKEN_EXPIRE_MINUTES }}
+            FINNHUB_WEBSOCKET_URI=${{ vars.FINNHUB_WEBSOCKET_URI }}
+            TD_API_AUTH_GATEWAY=${{ vars.TD_API_AUTH_GATEWAY }}
+            TD_API_CONSUMER_KEY=${{ secrets.TD_API_CONSUMER_KEY }}
+            TD_API_REDIRECT_URL=${{ vars.TD_API_REDIRECT_URL }}
+            TD_API_BASE_URL=${{ vars.TD_API_BASE_URL }}
+            TD_API_AUTH_URL=${{ vars.TD_API_AUTH_URL }}
+            TD_API_ORDERS_URL=${{ vars.TD_API_ORDERS_URL }}
+          secrets: |
+            GRYFFEN_SECRET_KEY=${{ secrets.GRYFFEN_SECRET_KEY }}
+            SERVICE_ACCOUNT_KEY=${{ secrets.SERVICE_ACCOUNT_KEY }}
+            DB_HOST=${{ secrets.DB_HOST }}
+            DB_USER=${{ secrets.DB_USER }}
+            DB_PASS=${{ secrets.DB_PASS }}
+            DB_NAME=${{ secrets.DB_NAME }}
+            DB_PORT=${{ secrets.DB_PORT }}
+            FINNHUB_API_KEY=${{ secrets.FINNHUB_API_KEY }}
+            ALPACA_API_KEY=${{ secrets.ALPACA_API_KEY }}
+            ALPACA_SECRET_KEY=${{ secrets.ALPACA_SECRET_KEY }}
 
       - name: Show Output
         run: echo ${{ steps.deploy.outputs.url }}
