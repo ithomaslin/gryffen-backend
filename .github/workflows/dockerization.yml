@@ -59,8 +59,8 @@ jobs:
           region: ${{ env.REGION }}
           image: ithomaslin/gryffen:${{ github.sha }}
           labels:
-            port=8000
-            set-env-vars=[
+            --port=8000
+            --set-env-vars=[
               GRYFFEN_RELOAD=${{ vars.GRYFFEN_RELOAD }},
               GRYFFEN_SECRET_KEY=${{ secrets.GRYFFEN_SECRET_KEY }},
               HASH_ITERATION=${{ vars.HASH_ITERATION }},
