@@ -77,16 +77,16 @@ jobs:
             TD_API_AUTH_URL=${{ vars.TD_API_AUTH_URL }}
             TD_API_ORDERS_URL=${{ vars.TD_API_ORDERS_URL }}
           secrets: |
-            GRYFFEN_SECRET_KEY=${{ secrets.GRYFFEN_SECRET_KEY }}
-            SERVICE_ACCOUNT_KEY=${{ secrets.SERVICE_ACCOUNT_KEY }}
-            DB_HOST=${{ secrets.DB_HOST }}
-            DB_USER=${{ secrets.DB_USER }}
-            DB_PASS=${{ secrets.DB_PASS }}
-            DB_NAME=${{ secrets.DB_NAME }}
-            DB_PORT=${{ secrets.DB_PORT }}
-            FINNHUB_API_KEY=${{ secrets.FINNHUB_API_KEY }}
-            ALPACA_API_KEY=${{ secrets.ALPACA_API_KEY }}
-            ALPACA_SECRET_KEY=${{ secrets.ALPACA_SECRET_KEY }}
+            GRYFFEN_SECRET_KEY=${{ secrets.GRYFFEN_SECRET_KEY }}:latest
+            SERVICE_ACCOUNT_KEY=${{ secrets.SERVICE_ACCOUNT_KEY }}:latest
+            DB_HOST=${{ secrets.DB_HOST }}:latest
+            DB_USER=${{ secrets.DB_USER }}:latest
+            DB_PASS=${{ secrets.DB_PASS }}:latest
+            DB_NAME=${{ secrets.DB_NAME }}:latest
+            DB_PORT=${{ secrets.DB_PORT }}:latest
+            FINNHUB_API_KEY=${{ secrets.FINNHUB_API_KEY }}:latest
+            ALPACA_API_KEY=${{ secrets.ALPACA_API_KEY }}:latest
+            ALPACA_SECRET_KEY=${{ secrets.ALPACA_SECRET_KEY }}:latest
 
       - name: Show Output
         run: echo ${{ steps.deploy.outputs.url }}
