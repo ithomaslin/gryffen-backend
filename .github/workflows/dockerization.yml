@@ -49,7 +49,7 @@ jobs:
         with:
           service: ${{ env.GCP_SERVICE_REGION }}
           region: ${{ env.GCP_SERVICE_REGION }}
-          image: ${{ secret.DOCKER_HUB_USERNAME }}/gryffen:$(date +'%Y-%m-%d')
+          image: ${{ secrets.DOCKER_HUB_USERNAME }}/gryffen:$(date +'%Y-%m-%d')
 
       - name: Show Output
         run: echo ${{ steps.deploy.outputs.url }}
