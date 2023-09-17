@@ -8,7 +8,7 @@ on:
 
 env:
   PROJECT_ID: griffin-ca510
-  SERVICE: gryffen-backend
+  SERVICE: gryffen
   REGION: us-central1
 
 jobs:
@@ -58,7 +58,7 @@ jobs:
           service: ${{ env.SERVICE }}
           region: ${{ env.REGION }}
           image: ithomaslin/gryffen:${{ github.sha }}
-          flags: '--port=8000'
+          flags: '--port=8000, --allow-unauthenticated'
           env_vars: |
             GRYFFEN_RELOAD=${{ vars.GRYFFEN_RELOAD }}
             HASH_ITERATION=${{ vars.HASH_ITERATION }}
