@@ -34,6 +34,7 @@ from gryffen.settings import settings
 
 async def create_database() -> None:
     """Create a database."""
+
     engine = create_async_engine(str(settings.db_url.with_path("/mysql")))
 
     async with engine.connect() as conn:
