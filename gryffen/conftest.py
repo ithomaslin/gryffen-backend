@@ -57,7 +57,7 @@ async def _engine() -> AsyncGenerator[AsyncEngine, None]:
 
     load_all_models()
 
-    await create_database()
+    # await create_database()
 
     engine = create_async_engine(str(settings.db_url))
     async with engine.begin() as conn:
@@ -67,7 +67,7 @@ async def _engine() -> AsyncGenerator[AsyncEngine, None]:
         yield engine
     finally:
         await engine.dispose()
-        await drop_database()
+        # await drop_database()
 
 
 @pytest.fixture
@@ -127,3 +127,14 @@ async def client(
     """
     async with AsyncClient(app=fastapi_app, base_url="http://test") as ac:
         yield ac
+
+
+@pytest.fixture(scope="session")
+def event_loop():
+    import asyncio
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+    yield loop
+    loop.close()

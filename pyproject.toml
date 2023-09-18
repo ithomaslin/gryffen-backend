@@ -38,6 +38,7 @@ deprecated = "^1.2.14"
 google = "^3.0.0"
 mangum = "^0.17.0"
 pre-commit = "^3.4.0"
+pytest-asyncio = "^0.21.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.2.1"
@@ -72,6 +73,7 @@ warn_return_any = false
 namespace_packages = true
 
 [tool.pytest.ini_options]
+asyncio_mode = "auto"
 filterwarnings = [
     "error",
     "ignore::DeprecationWarning",
@@ -79,7 +81,7 @@ filterwarnings = [
 ]
 env = [
     "GRYFFEN_ENVIRONMENT=pytest",
-    "GRYFFEN_DB_BASE=gryffen_test",
+#    "GRYFFEN_DB_BASE=gryffen_test",
 ]
 
 [fastapi-template.options]
