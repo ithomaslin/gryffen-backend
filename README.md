@@ -48,20 +48,104 @@ docker-compose -f deploy/docker-compose.yml --project-directory . build
 ```bash
 $ tree "gryffen"
 gryffen
-├── conftest.py  # Fixtures for all tests.
-├── db  # module contains db configurations
-│   ├── dao  # Data Access Objects. Contains different classes to interact with database.
-│   └── models  # Package contains different models for ORMs.
-├── __main__.py  # Startup script. Starts uvicorn.
-├── services  # Package for different external services such as rabbit or redis etc.
-├── settings.py  # Main configuration settings for project.
-├── static  # Static content.
-├── tests  # Tests for project.
-└── web  # Package contains web server. Handlers, startup config.
-    ├── api  # Package with all handlers.
-    │   └── router.py  # Main router.
-    ├── application.py  # FastAPI application configuration.
-    └── lifetime.py  # Contains actions to perform on startup and shutdown.
+├── __init__.py
+├── __main__.py
+├── conftest.py
+├── core
+│   ├── __init__.py
+│   ├── exchanges
+│   │   ├── TDAmeritrade
+│   │   │   ├── __init__.py
+│   │   │   ├── auth.py
+│   │   │   ├── client.py
+│   │   │   └── enums.py
+│   │   └── __init__.py
+│   ├── strategies
+│   │   ├── __init__.py
+│   │   ├── enum.py
+│   │   ├── grid.py
+│   │   └── martingale.py
+│   └── websocket
+│       ├── __init__.py
+│       ├── schema.py
+│       └── streamer.py
+├── db
+│   ├── base.py
+│   ├── dependencies.py
+│   ├── handlers
+│   │   ├── __init__.py
+│   │   ├── activation.py
+│   │   ├── credential.py
+│   │   ├── exchange.py
+│   │   ├── strategy.py
+│   │   └── user.py
+│   ├── meta.py
+│   ├── migrations
+│   │   ├── __init__.py
+│   │   ├── env.py
+│   │   ├── script.py.mako
+│   │   └── versions
+│   │       ├── 2021-08-16-16-53_819cbf6e030b.py
+│   │       ├── 2023-09-12-21-12_c47f5427f323.py
+│   │       ├── 2023-09-15-13-08_929422a2c75e.py
+│   │       └── __init__.py
+│   ├── models
+│   │   ├── __init__.py
+│   │   ├── activations.py
+│   │   ├── credentials.py
+│   │   ├── exchanges.py
+│   │   ├── positions.py
+│   │   ├── strategies.py
+│   │   └── users.py
+│   └── utils.py
+├── logging.py
+├── security.py
+├── settings.py
+├── static
+│   └── docs
+│       ├── redoc.standalone.js
+│       ├── swagger-ui-bundle.js
+│       └── swagger-ui.css
+├── tests
+│   ├── __init__.py
+│   └── test_echo.py
+└── web
+    ├── __init__.py
+    ├── api
+    │   ├── __init__.py
+    │   ├── docs
+    │   │   ├── __init__.py
+    │   │   └── views.py
+    │   ├── echo
+    │   │   ├── __init__.py
+    │   │   ├── schema.py
+    │   │   └── views.py
+    │   ├── griffin-ca510.json
+    │   ├── monitoring
+    │   │   ├── __init__.py
+    │   │   └── views.py
+    │   ├── router.py
+    │   ├── utils.py
+    │   └── v1
+    │       ├── __init__.py
+    │       ├── credential
+    │       │   ├── __init__.py
+    │       │   ├── schema.py
+    │       │   └── views.py
+    │       ├── exchange
+    │       │   ├── __init__.py
+    │       │   ├── schema.py
+    │       │   └── views.py
+    │       ├── strategy
+    │       │   ├── __init__.py
+    │       │   ├── schema.py
+    │       │   └── views.py
+    │       └── user
+    │           ├── __init__.py
+    │           ├── schema.py
+    │           └── views.py
+    ├── application.py
+    └── lifetime.py
 ```
 
 ## Configuration

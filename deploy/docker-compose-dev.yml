@@ -1,0 +1,46 @@
+version: '3.9'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: ./deploy/Dockerfile
+      target: prod
+    image: gryffen:${GRYFFEN_VERSION:-latest}
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - ./.env
+    ports:
+      - "8007:8000"
+
+  db:
+    image: mysql:8.0.34
+    hostname: gryffen-aws.cogxcxc3k8tx.us-east-1.rds.amazonaws.com
+    restart: always
+    environment:
+      MYSQL_ROOT_USER: "admin"
+      MYSQL_ROOT_PASSWORD: "LsYWbXpKPKOq6Zl622Og"
+      MYSQL_DATABASE: "gryffen-backend"
+      MYSQL_AUTHENTICATION_PLUGIN: "mysql_native_password"
+    healthcheck:
+      test: mysqladmin ping -h gryffen-aws.cogxcxc3k8tx.us-east-1.rds.amazonaws.com
+      interval: 10s
+      timeout: 5s
+      retries: 40
+
+  migrator:
+    image: gryffen:${GRYFFEN_VERSION:-latest}
+    restart: "no"
+    command: alembic upgrade head
+    environment:
+      GRYFFEN_DB_HOST: gryffen-aws.cogxcxc3k8tx.us-east-1.rds.amazonaws.com
+      GRYFFEN_DB_PORT: 3306
+      GRYFFEN_DB_USER: admin
+      GRYFFEN_DB_PASS: LsYWbXpKPKOq6Zl622Og
+      GRYFFEN_DB_BASE: gryffen-backend
+    depends_on:
+      db:
+        condition: service_healthy
