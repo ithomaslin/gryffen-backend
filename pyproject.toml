@@ -81,7 +81,7 @@ filterwarnings = [
 ]
 env = [
     "GRYFFEN_ENVIRONMENT=pytest",
-#    "GRYFFEN_DB_BASE=gryffen_test",
+    "TEST_EMAIL=ithomaslin@gmail.com",
 ]
 
 [fastapi-template.options]

@@ -147,7 +147,10 @@ async def register(
     )
 
     mail_service = GriffinMailService()
-    mail_service.send("test message", activation_code)
+    mail_service.send(
+        to=usr.email,
+        code=activation_code
+    )
 
     return {
         "status": "success",
