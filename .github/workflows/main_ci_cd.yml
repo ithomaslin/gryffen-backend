@@ -50,44 +50,6 @@ jobs:
         uses: 'google-github-actions/auth@v1'
         with:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
-        
-      - name: Apply GitHub Actions secrets
-        env:
-          DB_HOST: ${{ secrets.DB_HOST }}
-          DB_USER: ${{ secrets.DB_USER }}
-          DB_PASS: ${{ secrets.DB_PASS }}
-          DB_NAME: ${{ secrets.DB_NAME }}
-          DB_PORT: ${{ secrets.DB_PORT }}
-          GRYFFEN_SECRET_KEY: ${{ secrets.GRYFFEN_SECRET_KEY }}
-          SERVICE_ACCOUNT_KEY: ${{ secrets.SERVICE_ACCOUNT_KEY }}
-          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
-          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
-          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
-        run: |
-          echo "Setting DB_HOST value: $DB_HOST"
-          echo "Setting DB_USER value: $DB_USER"
-          echo "Setting DB_PASS value: $DB_PASS"
-          echo "Setting DB_NAME value: $DB_NAME"
-          echo "Setting DB_PORT value: $DB_PORT"
-          echo "Setting GRYFFEN_SECRET_KEY value: $GRYFFEN_SECRET_KEY"
-          echo "Setting SERVICE_ACCOUNT_KEY value: $SERVICE_ACCOUNT_KEY"
-          echo "Setting FINNHUB_API_KEY value: $FINNHUB_API_KEY"
-          echo "Setting ALPACA_API_KEY value: $ALPACA_API_KEY"
-          echo "Setting ALPACA_SECRET_KEY value: $ALPACA_SECRET_KEY"
-
-      # Only need to run this section in the first Cloud Run deployment.
-      # - name: Store Secret in Google Cloud Secret Manager
-      #   run: |
-      #     echo -n $DB_HOST | gcloud secrets create DB_HOST --data-file=-
-      #     echo -n $DB_USER | gcloud secrets create DB_USER --data-file=-
-      #     echo -n $DB_PASS | gcloud secrets create DB_PASS --data-file=-
-      #     echo -n $DB_NAME | gcloud secrets create DB_NAME --data-file=-
-      #     echo -n $DB_PORT | gcloud secrets create DB_PORT --data-file=-
-      #     echo -n $GRYFFEN_SECRET_KEY | gcloud secrets create GRYFFEN_SECRET_KEY --data-file=-
-      #     echo -n $SERVICE_ACCOUNT_KEY | gcloud secrets create SERVICE_ACCOUNT_KEY --data-file=-
-      #     echo -n $FINNHUB_API_KEY | gcloud secrets create FINNHUB_API_KEY --data-file=-
-      #     echo -n $ALPACA_API_KEY | gcloud secrets create ALPACA_API_KEY --data-file=-
-      #     echo -n $ALPACA_SECRET_KEY | gcloud secrets create ALPACA_SECRET_KEY --data-file=-
           
       - name: Deploy to Google Cloud Run
         id: deploy
