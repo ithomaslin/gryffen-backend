@@ -1,5 +1,6 @@
 import re
 import os
+import json
 import base64
 from email.message import EmailMessage
 from email.mime.multipart import MIMEMultipart
@@ -49,14 +50,13 @@ def is_valid_email(email):
 class GriffinMailService:
 
     def __init__(self):
-        base_directory = os.path.dirname(os.path.abspath(__file__))
-        credential_filepath = os.path.join(
-            base_directory, os.getenv("SERVICE_ACCOUNT_KEY")
-        )
+        service_account_json_string = os.getenv("SERVICE_ACCOUNT_JSON")
         api_scope = ['https://mail.google.com']
         from_email = 'griffin@neat.tw'
-        credentials = service_account.Credentials.from_service_account_file(
-            credential_filepath, scopes=api_scope)
+        credentials = service_account.Credentials.from_service_account_info(
+            info=json.loads(service_account_json_string),
+            scopes=api_scope
+        )
         delegated_credentials = credentials.with_subject(from_email)
         self.service = build('gmail', 'v1', credentials=delegated_credentials)
 
@@ -78,8 +78,10 @@ class GriffinMailService:
                 userId="me", body=msg
             ).execute()
 
+            return True
+
         except HttpError as error:
-            print(error)
+            return False
 
     @staticmethod
     def template(activation_code: str, email: str):
