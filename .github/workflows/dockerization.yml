@@ -50,7 +50,33 @@ jobs:
         uses: 'google-github-actions/auth@v1'
         with:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+        
+      - name: Apply GitHub Actions secrets
+        env:
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASS: ${{ secrets.DB_PASS }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          GRYFFEN_SECRET_KEY: ${{ secrets.GRYFFEN_SECRET_KEY }}
+          SERVICE_ACCOUNT_KEY: ${{ secrets.SERVICE_ACCOUNT_KEY }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
 
+      - name: Store Secret in Google Cloud Secret Manager
+        run: |
+          echo -n $DB_HOST | gcloud secrets create DB_HOST --data-file=- --locations=[us-central1]
+          echo -n $DB_USER | gcloud secrets create DB_USER --data-file=- --locations=[us-central1]
+          echo -n $DB_PASS | gcloud secrets create DB_PASS --data-file=- --locations=[us-central1]
+          echo -n $DB_NAME | gcloud secrets create DB_NAME --data-file=- --locations=[us-central1]
+          echo -n $DB_PORT | gcloud secrets create DB_PORT --data-file=- --locations=[us-central1]
+          echo -n $GRYFFEN_SECRET_KEY | gcloud secrets create GRYFFEN_SECRET_KEY --data-file=- --locations=[us-central1]
+          echo -n $SERVICE_ACCOUNT_KEY | gcloud secrets create SERVICE_ACCOUNT_KEY --data-file=- --locations=[us-central1]
+          echo -n $FINNHUB_API_KEY | gcloud secrets create FINNHUB_API_KEY --data-file=- --locations=[us-central1]
+          echo -n $ALPACA_API_KEY | gcloud secrets create ALPACA_API_KEY --data-file=- --locations=[us-central1]
+          echo -n $ALPACA_SECRET_KEY | gcloud secrets create ALPACA_SECRET_KEY --data-file=- --locations=[us-central1]
+          
       - name: Deploy to Google Cloud Run
         id: deploy
         uses: 'google-github-actions/deploy-cloudrun@v1'
@@ -78,17 +104,6 @@ jobs:
             TD_API_BASE_URL=${{ vars.TD_API_BASE_URL }}
             TD_API_AUTH_URL=${{ vars.TD_API_AUTH_URL }}
             TD_API_ORDERS_URL=${{ vars.TD_API_ORDERS_URL }}
-          secrets: |
-            GRYFFEN_SECRET_KEY=${{ secrets.GRYFFEN_SECRET_KEY }}:latest
-            SERVICE_ACCOUNT_KEY=${{ secrets.SERVICE_ACCOUNT_KEY }}:latest
-            DB_HOST=${{ secrets.DB_HOST }}:latest
-            DB_USER=${{ secrets.DB_USER }}:latest
-            DB_PASS=${{ secrets.DB_PASS }}:latest
-            DB_NAME=${{ secrets.DB_NAME }}:latest
-            DB_PORT=${{ secrets.DB_PORT }}:latest
-            FINNHUB_API_KEY=${{ secrets.FINNHUB_API_KEY }}:latest
-            ALPACA_API_KEY=${{ secrets.ALPACA_API_KEY }}:latest
-            ALPACA_SECRET_KEY=${{ secrets.ALPACA_SECRET_KEY }}:latest
 
       - name: Show Output
         run: echo ${{ steps.deploy.outputs.url }}
