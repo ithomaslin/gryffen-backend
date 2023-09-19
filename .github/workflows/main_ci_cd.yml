@@ -77,16 +77,16 @@ jobs:
 
       - name: Store Secret in Google Cloud Secret Manager
         run: |
-          echo -n $DB_HOST | gcloud secrets create DB_HOST --data-file=-
-          echo -n $DB_USER | gcloud secrets create DB_USER --data-file=-
-          echo -n $DB_PASS | gcloud secrets create DB_PASS --data-file=-
-          echo -n $DB_NAME | gcloud secrets create DB_NAME --data-file=-
-          echo -n $DB_PORT | gcloud secrets create DB_PORT --data-file=-
-          echo -n $GRYFFEN_SECRET_KEY | gcloud secrets create GRYFFEN_SECRET_KEY --data-file=-
-          echo -n $SERVICE_ACCOUNT_KEY | gcloud secrets create SERVICE_ACCOUNT_KEY --data-file=-
-          echo -n $FINNHUB_API_KEY | gcloud secrets create FINNHUB_API_KEY --data-file=-
-          echo -n $ALPACA_API_KEY | gcloud secrets create ALPACA_API_KEY --data-file=-
-          echo -n $ALPACA_SECRET_KEY | gcloud secrets create ALPACA_SECRET_KEY --data-file=-
+          echo -n $DB_HOST | gcloud secrets update DB_HOST --data-file=-
+          echo -n $DB_USER | gcloud secrets update DB_USER --data-file=-
+          echo -n $DB_PASS | gcloud secrets update DB_PASS --data-file=-
+          echo -n $DB_NAME | gcloud secrets update DB_NAME --data-file=-
+          echo -n $DB_PORT | gcloud secrets update DB_PORT --data-file=-
+          echo -n $GRYFFEN_SECRET_KEY | gcloud secrets update GRYFFEN_SECRET_KEY --data-file=-
+          echo -n $SERVICE_ACCOUNT_KEY | gcloud secrets update SERVICE_ACCOUNT_KEY --data-file=-
+          echo -n $FINNHUB_API_KEY | gcloud secrets update FINNHUB_API_KEY --data-file=-
+          echo -n $ALPACA_API_KEY | gcloud secrets update ALPACA_API_KEY --data-file=-
+          echo -n $ALPACA_SECRET_KEY | gcloud secrets update ALPACA_SECRET_KEY --data-file=-
           
       - name: Deploy to Google Cloud Run
         id: deploy
