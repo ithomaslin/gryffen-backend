@@ -56,7 +56,7 @@ class Settings(BaseSettings):
     with environment variables.
     """
 
-    host: str = "0.0.0.0"
+    host: str = os.getenv("GRYFFEN_HOST")
     port: int = 8000
     # quantity of workers for uvicorn
     workers_count: int = 1

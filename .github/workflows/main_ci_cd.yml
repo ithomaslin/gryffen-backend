@@ -1,4 +1,4 @@
-name: Dockerizing CI/CD
+name: Build and Push Docker image
 
 on:
   push:
@@ -62,6 +62,7 @@ jobs:
             --port=8000
             --allow-unauthenticated
           env_vars: |
+            GRYFFEN_HOST=${{ vars.GRYFFEN_HOST }}
             GRYFFEN_RELOAD=${{ vars.GRYFFEN_RELOAD }}
             HASH_ITERATION=${{ vars.HASH_ITERATION }}
             NUM_BENCHMARK=${{ vars.NUM_BENCHMARK }}
