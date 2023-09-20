@@ -59,16 +59,8 @@ from gryffen.db.handlers.user import (
 router = APIRouter(prefix="/user")
 
 
-@router.get("/")
-async def user_root_route():
-    """
-    This route is used to test if the API is working.
-    """
-    return {"message": "User API is working."}
-
-
 @private_method
-@router.post("/api-registration")
+@router.post("/api-registration", include_in_schema=False)
 async def register(
     request: UserCreationSchema,
     db: AsyncSession = Depends(get_db_session),
@@ -116,7 +108,7 @@ async def register(
 
 
 @private_method
-@router.post("/form-registration")
+@router.post("/form-registration", include_in_schema=False)
 async def register(
     email: str = Form(...),
     password: str = Form(...),
@@ -164,7 +156,7 @@ async def register(
 
 
 @private_method
-@router.post("/token-login")
+@router.post("/token-login", include_in_schema=False)
 async def login_for_oauth_token(
     form_data: security.OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db_session)
@@ -202,7 +194,7 @@ async def login_for_oauth_token(
 
 
 @private_method
-@router.post("/social-login")
+@router.post("/social-login", include_in_schema=False)
 async def social_login(
     request: UserAuthenticationSchema,
     db: AsyncSession = Depends(get_db_session),
@@ -223,7 +215,7 @@ async def social_login(
 
 
 @private_method
-@router.get("/oauth-refresh-token")
+@router.get("/oauth-refresh-token", include_in_schema=False)
 async def oauth_refresh(
     refresh_token: str,
     db: AsyncSession = Depends(get_db_session)
@@ -243,7 +235,7 @@ async def get_user(
     db: AsyncSession = Depends(get_db_session),
 ) -> Dict[str, Any]:
     """
-    API endpoint: fetch user info.
+    Fetch
 
     @param current_user:
     @param db:
@@ -258,7 +250,7 @@ async def get_user(
 
 
 @private_method
-@router.get("/oauth/me")
+@router.get("/oauth/me", include_in_schema=False)
 async def oauth_get_user(
     usr: UserAuthenticationSchema = Depends(oauth_get_current_user)
 ):
@@ -271,7 +263,7 @@ async def oauth_get_user(
 
 
 @private_method
-@router.get("/reissue-activation-code/{email}")
+@router.get("/reissue-activation-code/{email}", include_in_schema=False)
 async def reissue_activation(
     email: str,
     db: AsyncSession = Depends(get_db_session)
@@ -292,7 +284,7 @@ async def reissue_activation(
 
 
 @private_method
-@router.get("/activate/{activation_code}")
+@router.get("/activate/{activation_code}", include_in_schema=False)
 async def activate(
     activation_code: str,
     db: AsyncSession = Depends(get_db_session),
@@ -308,7 +300,7 @@ async def activate(
 
 
 @private_method
-@router.post("/promote/{public_id}")
+@router.post("/promote/{public_id}", include_in_schema=False)
 async def promote(
     public_id: str,
     current_user: Dict[str, Any] = Depends(decode_access_token),
@@ -327,7 +319,7 @@ async def promote(
 
 
 @private_method
-@router.get("/new-api-key/{email}")
+@router.get("/new-api-key/{email}", include_in_schema=False)
 async def get_new_api_key(
     email: str,
     db: AsyncSession = Depends(get_db_session)
@@ -343,7 +335,7 @@ async def get_new_api_key(
 
 
 @private_method
-@router.get("/has-account/{email}")
+@router.get("/has-account/{email}", include_in_schema=False)
 async def has_registered(
     email: str,
     db: AsyncSession = Depends(get_db_session),

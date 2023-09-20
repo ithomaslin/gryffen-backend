@@ -81,7 +81,10 @@ class GriffinMailService:
             return True
 
         except HttpError as error:
-            return False
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=error.content
+            )
 
     @staticmethod
     def template(activation_code: str, email: str):

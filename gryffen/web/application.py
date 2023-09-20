@@ -32,6 +32,7 @@ from fastapi.staticfiles import StaticFiles
 
 from gryffen.logging import configure_logging
 from gryffen.web.api.router import router
+from gryffen.web.router import root_router
 from gryffen.web.lifetime import register_shutdown_event, register_startup_event
 
 APP_ROOT = Path(__file__).parent.parent
@@ -50,7 +51,7 @@ def get_app() -> FastAPI:
         title="gryffen",
         version=metadata.version("gryffen"),
         docs_url=None,
-        redoc_url=None,
+        redoc_url="/api/v1/redoc",
         openapi_url="/api/openapi.json",
         default_response_class=UJSONResponse,
     )
@@ -61,6 +62,7 @@ def get_app() -> FastAPI:
 
     # Main router for the API.
     app.include_router(router=router, prefix="/api")
+    app.include_router(router=root_router)
     # Adds static directory.
     # This directory is used to access swagger files.
     app.mount(

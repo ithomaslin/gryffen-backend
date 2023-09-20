@@ -18,33 +18,17 @@
 # limitations under the License.
 
 """
-This script is used as the root router of the Gryffen API.
+This script is used to create the base router for the API.
 
 Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
-Date: 22/04/2023
+Date: 19/09/2023
 """
 
 from fastapi.routing import APIRouter
 
-from gryffen.web.api import docs, echo
-from gryffen.web.api.v1 import (
-    user,
-    strategy,
-    exchange,
-    credential
-)
-
-router = APIRouter()
-
-router.include_router(echo.router, prefix="/echo", tags=["echo"])
-router.include_router(user.router, prefix="/v1", tags=["user", "v1"])
-router.include_router(strategy.router, prefix="/v1", tags=["strategy", "v1"])
-router.include_router(exchange.router, prefix="/v1", tags=["exchange", "v1"])
-router.include_router(credential.router, prefix="/v1", tags=["credential", "v1"])
+root_router = APIRouter()
 
 
-@router.get("/")
-async def welcome():
-    return {
-        "message": "Welcome to Gryffen API!"
-    }
+@root_router.get("/")
+async def root():
+    return {"message": "Hello World"}
