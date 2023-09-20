@@ -26,7 +26,6 @@ Date: 22/04/2023
 
 from fastapi.routing import APIRouter
 
-from gryffen.web.api import docs, echo
 from gryffen.web.api.v1 import (
     user,
     strategy,
@@ -36,15 +35,7 @@ from gryffen.web.api.v1 import (
 
 router = APIRouter()
 
-router.include_router(echo.router, prefix="/echo", tags=["echo"])
-router.include_router(user.router, prefix="/v1", tags=["user", "v1"])
-router.include_router(strategy.router, prefix="/v1", tags=["strategy", "v1"])
-router.include_router(exchange.router, prefix="/v1", tags=["exchange", "v1"])
-router.include_router(credential.router, prefix="/v1", tags=["credential", "v1"])
-
-
-@router.get("/")
-async def welcome():
-    return {
-        "message": "Welcome to Gryffen API!"
-    }
+router.include_router(user.router, prefix="/v1", tags=["user"])
+router.include_router(strategy.router, prefix="/v1", tags=["strategy"])
+router.include_router(exchange.router, prefix="/v1", tags=["exchange"])
+router.include_router(credential.router, prefix="/v1", tags=["credential"])
