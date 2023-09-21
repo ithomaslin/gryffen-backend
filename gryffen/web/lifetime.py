@@ -25,14 +25,32 @@ Date: 22/04/2023
 """
 
 from typing import Awaitable, Callable
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from typing import Any
+from pathlib import Path
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from fastapi.templating import Jinja2Templates
 
 from gryffen.settings import settings
 from gryffen.core.websocket.streamer import Listener
 
 global_listener = Listener()
+BASE_DIR = Path(__file__).resolve().parent
+template = Jinja2Templates(directory=str(Path(BASE_DIR, 'templates')))
+
+
+def https_url_for(request: Request, name: str, **path_params: Any) -> str:
+    """
+
+    @param request:
+    @param name:
+    @param path_params:
+    @return:
+    """
+    http_url = request.url_for(name, **path_params)
+    # Replace 'http' with 'https'
+    return http_url.replace("http", "https", 1)
 
 
 def _setup_db(app: FastAPI) -> None:  # pragma: no cover
@@ -80,6 +98,8 @@ def register_startup_event(
         _setup_db(app)
         await global_listener.init()
         await global_listener.start_listening()
+
+        template.env.globals["https_url_for"] = https_url_for
 
         app.add_middleware(
             CORSMiddleware,
