@@ -28,6 +28,7 @@ from typing import Awaitable, Callable
 from fastapi import FastAPI, Request
 from typing import Any
 from pathlib import Path
+from starlette.datastructures import URL
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from fastapi.templating import Jinja2Templates
@@ -40,17 +41,17 @@ BASE_DIR = Path(__file__).resolve().parent
 template = Jinja2Templates(directory=str(Path(BASE_DIR, 'templates')))
 
 
-def https_url_for(request: Request, name: str, **path_params: Any) -> str:
-    """
-
-    @param request:
-    @param name:
-    @param path_params:
-    @return:
-    """
-    http_url = request.url_for(name, **path_params)
-    # Replace 'http' with 'https'
-    return http_url.replace("http", "https", 1)
+# def https_url_for(request: Request, name: str, **path_params: Any) -> str:
+#     """
+#
+#     @param request:
+#     @param name:
+#     @param path_params:
+#     @return:
+#     """
+#     http_url = request.url_for(name, **path_params)
+#     # Replace 'http' with 'https'
+#     return http_url.replace("http", "https", 1)
 
 
 def _setup_db(app: FastAPI) -> None:  # pragma: no cover
@@ -90,7 +91,7 @@ def register_startup_event(
         "http://localhost:8080",
         "http://localhost:3000",
         "http://localhost:5173",
-        "https://avis.neat.tw",
+        "https://tradinglab.app",
     ]
 
     @app.on_event("startup")
@@ -99,7 +100,7 @@ def register_startup_event(
         await global_listener.init()
         await global_listener.start_listening()
 
-        template.env.globals["https_url_for"] = https_url_for
+        template.env.globals["URL"] = URL
 
         app.add_middleware(
             CORSMiddleware,
