@@ -29,7 +29,6 @@ from fastapi.routing import APIRouter
 
 from .lifetime import template
 
-__all__ = ["root_router"]
 root_router = APIRouter()
 
 
