@@ -24,16 +24,15 @@ Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
 Date: 19/09/2023
 """
 
-from pathlib import Path
 from fastapi import Request
 from fastapi.routing import APIRouter
-from fastapi.templating import Jinja2Templates
 
+from .lifetime import template
+
+__all__ = ["root_router"]
 root_router = APIRouter()
-BASE_DIR = Path(__file__).resolve().parent
-templates = Jinja2Templates(directory=str(Path(BASE_DIR, 'templates')))
 
 
 @root_router.get("/")
 async def root(request: Request):
-    return templates.TemplateResponse("home.html", {"request": request})
+    return template.TemplateResponse("home.html", {"request": request})
