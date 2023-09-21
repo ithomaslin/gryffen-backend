@@ -56,6 +56,7 @@ def get_app() -> FastAPI:
         default_response_class=UJSONResponse,
     )
 
+
     # Adds startup and shutdown events.
     register_startup_event(app)
     register_shutdown_event(app)
