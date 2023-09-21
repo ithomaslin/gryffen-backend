@@ -29,6 +29,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.responses import UJSONResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.gzip import GZipMiddleware
 
 from gryffen.logging import configure_logging
 from gryffen.web.api.router import router
@@ -70,6 +71,8 @@ def get_app() -> FastAPI:
         StaticFiles(directory=APP_ROOT / "static"),
         name="static",
     )
+
+    app.add_middleware(GZipMiddleware)
 
     # Returns application.
     return app
