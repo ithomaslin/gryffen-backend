@@ -1,4 +1,3 @@
-# -*- encoding: utf-8 -*-
 # Copyright (c) 2023, Neat Digital
 # All rights reserved.
 #
@@ -52,7 +51,7 @@ def get_app() -> FastAPI:
         title="gryffen",
         version=metadata.version("gryffen"),
         docs_url=None,
-        redoc_url="/api/v1/redoc",
+        redoc_url="/api/v1/doc",
         openapi_url="/api/openapi.json",
         default_response_class=UJSONResponse,
     )
