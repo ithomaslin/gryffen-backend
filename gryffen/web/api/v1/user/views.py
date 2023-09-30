@@ -61,6 +61,7 @@ router = APIRouter(prefix="/user")
 
 
 @private_method
+
 @router.post("/create", include_in_schema=False)
 async def create_user(
     request: UserCreationSchema,

@@ -71,5 +71,7 @@ def get_app() -> FastAPI:
         name="static",
     )
 
+    app.add_middleware(GZipMiddleware)
+
     # Returns application.
     return app
