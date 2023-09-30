@@ -1,4 +1,3 @@
-# -*- encoding: utf-8 -*-
 # Copyright (c) 2023, Neat Digital
 # All rights reserved.
 #
@@ -93,8 +92,6 @@ class User(Base):
         for key, value in kwargs.items():
             if hasattr(value, "__iter__") and not isinstance(value, str):
                 value = value[0]
-            if key == "password" or key == "external_uid":
-                value = hashing(value)
             setattr(self, key, value)
 
     def __repr__(self):

@@ -1,4 +1,3 @@
-# -*- encoding: utf-8 -*-
 # Copyright (c) 2023, Neat Digital
 # All rights reserved.
 #
@@ -43,7 +42,7 @@ class UserCreationSchema(BaseModel):
     __errors: List = []
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
     async def is_valid(self):
         if not self.email or not is_valid_email(self.email):

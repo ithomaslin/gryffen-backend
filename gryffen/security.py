@@ -1,4 +1,3 @@
-# -*- encoding: utf-8 -*-
 # Copyright (c) 2023, Neat Digital
 # All rights reserved.
 #
@@ -48,6 +47,8 @@ def hashing(password: str) -> hashlib.sha256:
     @param: password: user password
     @return: byte
     """
+    if password is None:
+        return None
     salt = hashlib.sha256(os.urandom(60)).hexdigest().encode("ascii")
     password_hash = binascii.hexlify(
         hashlib.pbkdf2_hmac("sha512", password.encode("utf-8"), salt, 100000),
