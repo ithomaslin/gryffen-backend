@@ -1,4 +1,3 @@
-# -*- encoding: utf-8 -*-
 # Copyright (c) 2023, Neat Digital
 # All rights reserved.
 #
@@ -37,5 +36,5 @@ class CredentialCreationSchema(BaseModel):
     scope: str
     expires_at: Optional[datetime] = None
 
-    class  Config:
-        orm_mode = True
+    class Config:
+        from_attributes = True
