@@ -1,4 +1,3 @@
-# -*- encoding: utf-8 -*-
 # Copyright (c) 2023, Neat Digital
 # All rights reserved.
 #
@@ -40,4 +39,4 @@ class StrategyCreationSchema(BaseModel):
     max_drawdown: Optional[float] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
