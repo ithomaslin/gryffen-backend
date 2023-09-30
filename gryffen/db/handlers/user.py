@@ -1,4 +1,3 @@
-# -*- encoding: utf-8 -*-
 # Copyright (c) 2023, Neat Digital
 # All rights reserved.
 #
@@ -23,7 +22,7 @@ This script is used to create DB handler functions for user-related actions.
 Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
 Date: 22/04/2023
 """
-import typing
+
 import uuid
 import jwt
 from typing import Dict, Any, Optional
@@ -40,6 +39,7 @@ from gryffen.web.api.v1.user.schema import (
     UserCreationSchema, UserAuthenticationSchema
 )
 from gryffen.settings import settings
+from gryffen.security import hashing
 from gryffen.logging import logger
 
 
@@ -50,20 +50,24 @@ async def create_user(
     submission: UserCreationSchema,
     db: AsyncSession,
 ) -> User:
-    """
-    User creation DB handler.
+    """Creates a new user.
 
-    @param submission: UserCreationSchema
-    @param db: DB session
-    @return: user
+    Creates a new user object and adds it to the database.
+
+    Args:
+        submission: The user creation schema.
+        db: The database session object.
+
+    Returns:
+        User: The newly created user object.
     """
     user = User(
         username=submission.email,
-        password=submission.password,
+        password=hashing(submission.password),
         email=submission.email,
         public_id=str(uuid.uuid4()),
         register_via=submission.register_via,
-        external_uid=submission.external_uid,
+        external_uid=hashing(submission.external_uid),
         timestamp_created=datetime.utcnow(),
         timestamp_updated=datetime.utcnow(),
     )
@@ -76,23 +80,25 @@ async def create_user(
 
 
 async def check_user_exist(
-    user: UserCreationSchema,
+    email: str,
     db: AsyncSession
 ) -> bool:
-    """
-    A pre-check method to verify if a user is already existed.
+    """Checks if user exists.
 
-    @param user:
-    @param db:
-    @return:
+    Args:
+        email: The email address to be verified.
+        db: The database session object.
+
+    Returns:
+        bool: True if user exists, False otherwise.
     """
-    stmt = select(User).where(User.email == user.email)
+    stmt = select(User).where(User.email == email)
     result = await db.execute(stmt)
     if result.scalar():
-        logger.info(f"[{datetime.utcnow()}] User {user.email} already exists.")
+        logger.info(f"[{datetime.utcnow()}] User {email} already exists.")
         return True
 
-    logger.info(f"[{datetime.utcnow()}] User {user.email} does not exist.")
+    logger.info(f"[{datetime.utcnow()}] User {email} does not exist.")
     return False
 
 
@@ -101,28 +107,33 @@ async def authenticate_user(
     password: str,
     db: AsyncSession
 ) -> Optional[User]:
-    """
-    User authenticate function.
+    """Checks password and returns user object.
 
-    @param email:
-    @param password:
-    @param db:
-    @return:
-    """
-    response: Dict = await get_user_by_email(email, db)
-    if not type(response.get("data")):
-        return None
-    elif len(response.get("data")) == 0:
-        return None
+    Checks if user exists and password matches. If so, returns the user object.
+    Otherwise, returns None.
 
-    user = response.get("data")["user"]
-    if user and verify_password(password, user.password):
-        return user
-    else:
+    Note:
+        This function is used by the fastapi-jwt-auth library.
+
+    Raises:
+        HTTPException: If user does not exist.
+        HTTPException: If password does not match.
+
+    Returns:
+        User: The user object.
+    """
+    try:
+        usr: User = await get_user_by_email(email, db)
+    except HTTPException:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Password mismatched."
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found."
         )
+
+    if usr and verify_password(password, usr.password):
+        return usr
+    else:
+        return None
 
 
 async def social_authenticate_user(
@@ -130,24 +141,45 @@ async def social_authenticate_user(
     uid: str,
     db: AsyncSession
 ) -> Optional[User]:
-    response: Dict = await get_user_by_email(email, db)
-    user = response.get("data")["user"]
-    if not user:
+    """Third-party authentication function.
+
+    Args:
+        email: The user's email address.
+        uid: The user's external uid.
+        db: The database session.
+
+    Returns:
+        The user object.
+    """
+    try:
+        usr: User = await get_user_by_email(email, db)
+    except HTTPException:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found."
+        )
+
+    if usr and verify_password(uid, usr.external_uid):
+        return usr
+    else:
         return None
-    if user and verify_password(uid, user.external_uid):
-        return user
 
 
 async def get_user_by_token(
     current_user: Dict[str, Any],
     db: AsyncSession
-) -> Dict[str, Any]:
-    """
-    Fetch the info of a user by access token.
+) -> Optional[User]:
+    """Fetches user object by token.
 
-    @param current_user:
-    @param db:
-    @return:
+    Fetches the user object by the token. If the token is valid, the user object
+    is returned. Otherwise, None is returned.
+
+    Args:
+        current_user: The current user object.
+        db: The database session.
+
+    Returns:
+        User: The user object.
     """
     stmt = select(User).where(User.username == current_user.get("username"))
     usr: User = await db.scalar(stmt)
@@ -155,32 +187,27 @@ async def get_user_by_token(
         logger.info(
             f"[{datetime.utcnow()}] User {usr.username} fetched successfully."
         )
-        return {
-            "status": "success",
-            "message": "User fetched successfully.",
-            "data": {
-                "user": usr,
-            },
-        }
+        return usr
 
     logger.info(f"[{datetime.utcnow()}] User {current_user.get('username')} not found.")
-    return {
-        "status": "failed",
-        "message": "User not found.",
-        "data": {},
-    }
+    return None
 
 
 async def get_user_by_email(
     user_email: str,
     db: AsyncSession
-) -> Dict[str, Any]:
-    """
-    Fetch the info of a user by user email.
+) -> Optional[User]:
+    """Fetches user object by email.
 
-    @param user_email:
-    @param db:
-    @return:
+    Fetches the user object by the email. If the user exists, the user object
+    is returned. Otherwise, None is returned.
+
+    Args:
+        user_email: The user's email address.
+        db: The database session.
+
+    Returns:
+        User: The user object.
     """
     stmt = select(User).where(User.email == user_email)
     usr: User = await db.scalar(stmt)
@@ -188,30 +215,26 @@ async def get_user_by_email(
         logger.info(
             f"[{datetime.utcnow()}] User {usr.username} fetched successfully."
         )
-        return {
-            "status": "success",
-            "message": "User fetched successfully.",
-            "data": {
-                "user": usr,
-            },
-        }
-    return {
-        "status": "failed",
-        "message": "User not found.",
-        "data": {},
-    }
+        return usr
+
+    return None
 
 
 async def activate_user(
     activation_code: str,
     db: AsyncSession
-) -> Dict[str, Any]:
-    """
-    Activate a user.
+) -> tuple:
+    """Activates user account.
 
-    @param activation_code:
-    @param db:
-    @return:
+    Args:
+        activation_code: The activation code.
+        db: The database session.
+
+    Raises:
+        HTTPException: If the activation code is invalid or expired.
+
+    Returns:
+        Tuple: Tuple of username, email and access token.
     """
     decoded_token = await verify_activation_code(activation_code, db)
     usr = await db.execute(
@@ -242,68 +265,66 @@ async def activate_user(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="The activation code is invalid or expired."
         )
-    return {
-        "status": "success",
-        "message": "User activated successfully.",
-        "data": {
-            "username": decoded_token.get("username"),
-            "email": decoded_token.get("email"),
-            "access_token": access_token,
-        }
-    }
+    return decoded_token.get("username"), decoded_token.get("email"), access_token
 
 
 async def promote_user(
     current_user: Dict[str, Any],
     public_id: str,
     db: AsyncSession
-) -> Dict[str, Any]:
-    """
-    Promote a user to superuser.
+) -> bool:
+    """Promotes a user
 
-    @param current_user:
-    @param public_id:
-    @param db:
-    @return:
+    Args:
+        current_user: User who performs this action.
+        public_id: The public ID of the user to be promoted.
+        db: The database session.
+
+    Raises:
+        HTTPException: If the user is not a superuser.
+
+    Returns:
+        bool: True if the user is successfully promoted.
     """
-    stmt = (
-        update(User)
-        .where(
-            User.username == current_user.get("username")
-            and User.public_id == public_id,
+    stmt = select(User).where(User.username == current_user.get("username"))
+
+    usr: User = await db.scalar(stmt)
+    if not usr.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You're not authorized to promote a user."
         )
+
+    update_stmt = (
+        update(User)
+        .where(User.public_id == public_id)
         .values(
             is_superuser=True,
-            timestamp_updated=datetime.utcnow()
+            timestamp_updated=datetime.utcnow(),
         )
     )
-    await db.execute(stmt)
+    await db.execute(update_stmt)
     await db.commit()
-    return {
-        "status": "success",
-        "message": "User promoted successfully.",
-        "data": {
-            "username": current_user.get("username"),
-            "public_id": public_id,
-        },
-    }
+    return True
 
 
 async def create_new_api_key(
     email: str,
     db: AsyncSession
-) -> Dict[str, Any]:
-    """
-    Create a new access token for a user.
+) -> str:
+    """Creates API key for a user.
 
-    @param email:
-    @param db:
-    @return:
+    Args:
+        email: The email address of the user.
+        db: The database session object.
+
+    Returns:
+        The `api_key` for the user.
     """
     stmt = select(User).where(User.email == email)
     current_user: User = await db.scalar(stmt)
     if current_user:
-        new_token = create_access_token({
+        api_key = create_access_token({
             "id": current_user.id,
             "username": current_user.username,
             "email": current_user.email,
@@ -312,7 +333,7 @@ async def create_new_api_key(
             update(User)
             .where(User.id == current_user.id)
             .values(
-                access_token=new_token,
+                access_token=api_key,
                 timestamp_updated=datetime.utcnow(),
             )
         )
@@ -320,19 +341,10 @@ async def create_new_api_key(
         await db.commit()
     else:
         raise HTTPException(status_code=404, detail="User not found.")
-    return {
-        "status": "success",
-        "message": "New access token created successfully.",
-        "data": {
-            "username": current_user.username,
-            "email": current_user.email,
-            "access_token": new_token,
-        }
-    }
+    return api_key
 
 
-"""
-*** Beginning of OAuth methods ***
+"""Beginning of OAuth methods
 
 This section is enclosed with all OAuth-related methods
 """
@@ -341,7 +353,22 @@ This section is enclosed with all OAuth-related methods
 async def oauth_get_current_user(
     token: str = Depends(oauth2_schema),
     db: AsyncSession = Depends(get_db_session)
-):
+) -> User:
+    """Gets current user via OAuth token.
+
+    This method gets the current user via OAuth token. The token is
+    verified and the user object is returned.
+
+    Args:
+        token: The OAuth token.
+        db: The database session object.
+
+    Returns:
+        User: The current user.
+
+    Raises:
+        HTTPException: If the token is invalid or expired.
+    """
     try:
         payload = jwt.decode(token, settings.gryffen_security_key, algorithms=["HS256"])
         if datetime.fromtimestamp(payload.get("expires")) < datetime.utcnow():
@@ -364,15 +391,20 @@ async def oauth_get_current_user(
 async def oauth_create_token(
     user: User
 ) -> Dict[str, str]:
-    """
-    Generate oauth token for user.
+    """Creates OAuth token for front-end users.
 
-    @param user:
-    @return:
+    Args:
+        user: The user object.
+
+    Returns:
+        The dictionary of access token and refresh token.
+
+    Raises:
+        HTTPException: If the user is not found.
     """
-    user_obj = UserAuthenticationSchema.from_orm(user)
+    user_obj = UserAuthenticationSchema.model_validate(user)
     refresh_token = jwt.encode(
-        user_obj.dict(),
+        user_obj.model_dump(),
         settings.gryffen_security_key,
         settings.access_token_hash_algorithm
     )
@@ -380,7 +412,7 @@ async def oauth_create_token(
     expire = datetime.utcnow() + timedelta(
         minutes=int(settings.oauth_token_duration_minute)
     )
-    to_encode = user_obj.dict()
+    to_encode = user_obj.model_dump()
     to_encode.update(expires=int(datetime.timestamp(expire)))
     access_token = jwt.encode(
         to_encode,
@@ -397,14 +429,23 @@ async def oauth_create_token(
 
 
 async def oauth_refresh_token(
-    token: str,
+    refresh_token: str,
     db: AsyncSession
-):
-    payload = jwt.decode(token, settings.gryffen_security_key, algorithms=["HS256"])
+) -> Dict[str, str]:
+    """Refreshes the access token via refresh token
+
+    Args:
+        refresh_token: The refresh token.
+        db: The database session object.
+
+    Returns:
+        The dictionary of access token and refresh token.
+    """
+    payload = jwt.decode(refresh_token, settings.gryffen_security_key, algorithms=["HS256"])
     user: User = await db.scalar(
         select(User).where(User.email == payload.get("email"))
     )
     return await oauth_create_token(user)
 
 
-"""    End of OAuth methods    """
+"""End of OAuth methods"""

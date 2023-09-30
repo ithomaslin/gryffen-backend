@@ -1,4 +1,3 @@
-# -*- encoding: utf-8 -*-
 # Copyright (c) 2023, Neat Digital
 # All rights reserved.
 #
@@ -26,13 +25,15 @@ Date: 22/04/2023
 
 from typing import Any, Dict
 from fastapi import APIRouter, Depends, HTTPException, Form, status, security
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 from deprecated import deprecated
 
 from gryffen.security import decode_access_token
 from gryffen.db.dependencies import get_db_session
-from gryffen.web.api.utils import GriffinMailService
-from gryffen.web.api.utils import private_method
+from gryffen.web.api.utils import GriffinMailService, private_method
+from gryffen.db.models.users import User
 from gryffen.web.api.v1.user.schema import (
     UserCreationSchema,
     UserAuthenticationSchema
@@ -60,20 +61,38 @@ router = APIRouter(prefix="/user")
 
 
 @private_method
-@router.post("/api-registration", include_in_schema=False)
-async def register(
+
+@router.post("/create", include_in_schema=False)
+async def create_user(
     request: UserCreationSchema,
     db: AsyncSession = Depends(get_db_session),
+    status_code: int = status.HTTP_201_CREATED,
 ):
-    """
-    API endpoint: user registration.
+    """Creates user (via application/json)
 
-    @param request: UserCreationSchema
-    @param db: DB AsyncSession
-    @return:
+    Creates a new user and sends an activation code to the user's email.
+
+    Args:
+        request: The request schema for creating a new user, request body should contain
+            the following fields:
+                |- email
+                |- password
+                |- register_via
+                |- external_uid
+                |- first_name
+                |- last_name
+        db: The database session object, which will be populated by the dependency injection
+            method `get_db_session` automatically.
+        status_code: The default status_code to be returned when the request is successful.
+
+    Returns:
+        A JSONResponse object with the following fields:
+            |- status: The status of the request.
+            |- message: The message of the request.
+            |- data: The data of the request.
     """
     valid = await request.is_valid()
-    user_exists = await check_user_exist(request, db)
+    user_exists = await check_user_exist(request.email, db)
     if user_exists:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -85,7 +104,7 @@ async def register(
             detail=f"Invalid input."
         )
 
-    user = await create_user(request, db)
+    user: User = await create_user(request, db)
     activation_code_obj = await create_activation_code(
         user.id, user.username, user.email, db
     )
@@ -96,83 +115,112 @@ async def register(
         code=activation_code_obj.activation_code
     )
 
-    return {
-        "status": "success",
-        "message": "User created.",
-        "data": {
-            "user": user,
-            "activation_code": activation_code_obj,
-            "info": "Please activate your account within 15 minutes."
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "status": "success",
+            "message": "User created.",
+            "data": {
+                "user": jsonable_encoder(user),
+                "activation_code": activation_code_obj.activation_code,
+                "info": "Please activate your account within 15 minutes."
+            }
         }
-    }
+    )
 
 
 @private_method
-@router.post("/form-registration", include_in_schema=False)
-async def register(
+@router.post("/create/form", include_in_schema=False)
+async def create_user_via_form(
     email: str = Form(...),
     password: str = Form(...),
     register_via: str = Form(...),
-    db: AsyncSession = Depends(get_db_session)
+    db: AsyncSession = Depends(get_db_session),
+    status_code: int = status.HTTP_201_CREATED,
 ):
-    """
+    """Creates user (via Form)
 
-    @param email:
-    @param password:
-    @param register_via:
-    @param db:
-    @return:
+    Creates a new user and sends an activation code to the user's email.
+
+    Args:
+        email: The email address of the user.
+        password: The user defined password.
+        register_via: The middleware used to register the user.
+        db: The database session object, which will be populated by the dependency injection
+            method `get_db_session` automatically.
+        status_code: The default status_code to be returned when the request is successful.
+
+    Returns:
+        A JSONResponse object with the following fields:
+            status: The status of the request.
+            message: The message of the request.
+            data: The data of the request.
     """
     submission = UserCreationSchema(
         email=email, password=password, register_via=register_via
     )
-    user_exists = await check_user_exist(submission, db)
+    user_exists = await check_user_exist(email, db)
     if user_exists:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Your email {email} has already been registered."
         )
 
-    usr = await create_user(submission, db)
-    activation_code = await create_activation_code(
+    usr: User = await create_user(submission, db)
+    activation_code_obj = await create_activation_code(
         usr.id, usr.username, usr.email, db
     )
 
     mail_service = GriffinMailService()
     mail_service.send(
         to=usr.email,
-        code=activation_code
+        code=activation_code_obj.activation_code
     )
 
-    return {
-        "status": "success",
-        "message": "User created.",
-        "data": {
-            "user": usr,
-            "activation_code": activation_code,
-            "info": "Please activate your account within 15 minutes."
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "status": "success",
+            "message": "User created.",
+            "data": {
+                "user": jsonable_encoder(usr),
+                "activation_code": activation_code_obj.activation_code,
+                "info": "Please activate your account within 15 minutes."
+            }
         }
-    }
+    )
 
 
 @private_method
 @router.post("/token-login", include_in_schema=False)
 async def login_for_oauth_token(
     form_data: security.OAuth2PasswordRequestForm = Depends(),
-    db: AsyncSession = Depends(get_db_session)
-):
-    """
-    Loging user via oauth token
+    db: AsyncSession = Depends(get_db_session),
+    status_code: int = status.HTTP_200_OK,
+) -> JSONResponse:
+    """Logs user in (via OAuth2PasswordRequestForm)
 
-    @param form_data:
-    @param db:
-    @return:
-    """
-    usr = await authenticate_user(
-        form_data.username, form_data.password, db
-    )
+    Authenticates user with email/password pair.
 
-    if not usr:
+    Args:
+        form_data: The HTML form data that contains user's email and password.
+        db: The database session object, which will be populated by the dependency injection
+            method `get_db_session` automatically.
+        status_code: The default status_code to be returned when the request is successful.
+
+    Returns:
+        A JSONResponse object with the following fields:
+            status: The status of the request.
+            message: The message of the request.
+            data: The data of the request.
+                |- user: The user object.
+                |- token: The access token object.
+    """
+    try:
+        usr: User = await authenticate_user(
+            form_data.username, form_data.password, db
+        )
+    except HTTPException:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"User with email {form_data.username} is not found."
@@ -190,7 +238,19 @@ async def login_for_oauth_token(
             detail="User is not activated yet, so here's a teapot."
         )
 
-    return await oauth_create_token(usr)
+    token = await oauth_create_token(usr)
+
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "status": "success",
+            "message": "User logged in successfully.",
+            "data": {
+                "user": jsonable_encoder(usr),
+                "token": token,
+            }
+        }
+    )
 
 
 @private_method
@@ -198,89 +258,196 @@ async def login_for_oauth_token(
 async def social_login(
     request: UserAuthenticationSchema,
     db: AsyncSession = Depends(get_db_session),
-):
-    """
+    status_code: int = status.HTTP_200_OK,
+) -> JSONResponse:
+    """Logs user in (via third-party OAuth)
 
-    @param request:
-    @param db:
-    @return:
+    Authenticates the user via third-party OAuth provider. It will create a new access token for the user.
+    Finally, it will return the user object and the access token object.
+
+    Args:
+        request: The request object that contains the user's email and external UID.
+        db: The database session object, which will be populated by the dependency injection
+            method `get_db_session` automatically.
+        status_code: The default status_code to be returned when the request is successful.
+
+    Returns:
+        A JSONResponse object with the following fields:
+            status: The status of the request.
+            message: The message of the request.
+            data: The data of the request.
+                |- user: The user object.
+                |- token: The access token object.
     """
-    user = await social_authenticate_user(request.email, request.external_uid, db)
-    if not user.is_active:
+    try:
+        usr: User = await social_authenticate_user(request.email, request.external_uid, db)
+    except HTTPException:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User with email {request.email} is not found."
+        )
+
+    if not usr.is_active:
         raise HTTPException(
             status_code=status.HTTP_418_IM_A_TEAPOT,
             detail="User is not activated yet, so here's a teapot."
         )
-    return await oauth_create_token(user)
+
+    token = await oauth_create_token(usr)
+
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "status": "success",
+            "message": "User logged in successfully.",
+            "data": {
+                "user": jsonable_encoder(usr),
+                "token": token,
+            }
+        }
+    )
 
 
 @private_method
 @router.get("/oauth-refresh-token", include_in_schema=False)
 async def oauth_refresh(
     refresh_token: str,
-    db: AsyncSession = Depends(get_db_session)
-):
-    """
+    db: AsyncSession = Depends(get_db_session),
+    status_code: int = status.HTTP_200_OK,
+) -> JSONResponse:
+    """Refreshes the access token.
 
-    @param refresh_token:
-    @param db:
-    @return:
+    Args:
+        refresh_token: The refresh token.
+        db: The database session object, which will be populated by the dependency injection
+            method `get_db_session` automatically.
+        status_code: The default status_code to be returned when the request is successful.
+
+    Returns:
+        A JSONResponse object with the following fields:
+            status: The status of the request.
+            message: The message of the request.
+            data: The data of the request.
+                |- token: The access token object.
     """
-    return await oauth_refresh_token(refresh_token, db)
+    token = await oauth_refresh_token(refresh_token, db)
+
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "status": "success",
+            "message": "Token refreshed successfully.",
+            "data": {
+                "token": token,
+            }
+        }
+    )
 
 
 @router.get("/me")
 async def get_user(
     current_user: Dict[str, Any] = Depends(decode_access_token),
     db: AsyncSession = Depends(get_db_session),
-) -> Dict[str, Any]:
-    """
-    Fetch
+    status_code: int = status.HTTP_200_OK,
+) -> JSONResponse:
+    """Gets user object
 
-    @param current_user:
-    @param db:
-    @return:
+    Retrieves user's information.
+
+    Args:
+        current_user: The user object that is retrieved from decoding the access token.
+        db: The database session object, which will be populated by the dependency injection
+            method `get_db_session` automatically.
+        status_code: The default status_code to be returned when the request is successful.
+
+    Returns:
+        A JSONResponse object with the following fields:
+            status: The status of the request.
+            message: The message of the request.
+            data: The data of the request.
+                |- user: The user object.
     """
-    user: Dict[str, Any] = await get_user_by_token(current_user, db)
-    return {
-        "status": "success",
-        "message": "User info fetched.",
-        "data": {"user": user}
-    }
+    usr: User = await get_user_by_token(current_user, db)
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "status": "success",
+            "message": "User fetched successfully.",
+            "data": {
+                "user": jsonable_encoder(usr),
+            }
+        }
+    )
 
 
 @private_method
 @router.get("/oauth/me", include_in_schema=False)
 async def oauth_get_user(
-    usr: UserAuthenticationSchema = Depends(oauth_get_current_user)
-):
-    """
+    usr: UserAuthenticationSchema = Depends(oauth_get_current_user),
+    status_code: int = status.HTTP_200_OK,
+) -> JSONResponse:
+    """Gets user object.
 
-    @param usr:
-    @return:
+    Retrieves user's information via OAuth.
+
+    Args:
+        usr: The user object that is retrieved from decoding the access token.
+        status_code: The default status_code to be returned when the request is successful.
+
+    Returns:
+        A JSONResponse object with the following fields:
+            status: The status of the request.
+            message: The message of the request.
+            data: The data of the request.
+                |- user: The user object.
     """
-    return usr
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "status": "success",
+            "message": "User fetched successfully.",
+            "data": {
+                "user": jsonable_encoder(usr),
+            }
+        }
+    )
 
 
 @private_method
 @router.get("/reissue-activation-code/{email}", include_in_schema=False)
 async def reissue_activation(
     email: str,
-    db: AsyncSession = Depends(get_db_session)
-) -> Dict[str, Any]:
-    """
-    API endpoint: reissue activation code.
+    db: AsyncSession = Depends(get_db_session),
+    status_code: int = status.HTTP_200_OK,
+) -> JSONResponse:
+    """Reissues a new activation code
 
-    @param email: of the user
-    @param db: DB AsyncSession
-    @return:
+    Generates a new activation code for the user and sends it to the user's email address.
+
+    Args:
+        email: The user's email address.
+        db: The database session object, which will be populated by the dependency injection
+            method `get_db_session` automatically.
+        status_code: The default status_code to be returned when the request is successful.
+
+    Returns:
+        A JSONResponse object with the following fields:
+            status: The status of the request.
+            message: The message of the request.
     """
-    access_token = await reissue_activation_code(email, db)
-    return {
-        "status": "success",
-        "message": "Activation code reissued.",
-        "data": {"access_token": access_token}
-    }
+    activation_code_obj = await reissue_activation_code(email, db)
+    mail_service = GriffinMailService()
+    mail_service.send(
+        to=email,
+        code=activation_code_obj.activation_code
+    )
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "status": "success",
+            "message": "Activation code reissued successfully.",
+        }
+    )
 
 
 @private_method
@@ -288,15 +455,44 @@ async def reissue_activation(
 async def activate(
     activation_code: str,
     db: AsyncSession = Depends(get_db_session),
-):
-    """
-    API endpoint: activate a given user by access token.
+    status_code: int = status.HTTP_200_OK,
+) -> JSONResponse:
+    """Activates user account
 
-    @param activation_code:
-    @param db:
-    @return:
+    Activates user's account via the activation code.
+
+    Note:
+        The activation code is generated by the `reissue_activation_code` method.
+
+    Args:
+        activation_code: The activation code.
+        db: The database session object, which will be populated by the dependency injection
+            method `get_db_session` automatically.
+        status_code: The default status_code to be returned when the request is successful.
+
+    Returns:
+        A JSONResponse object with the following fields:
+            status: The status of the request.
+            message: The message of the request.
+            data: The data of the request.
+                |- username: The username of the user.
+                |- email: The email of the user.
+                |- access_token: The access token of the user.
     """
-    return await activate_user(activation_code, db)
+    username, email, access_token = await activate_user(activation_code, db)
+
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "status": "success",
+            "message": "User activated successfully.",
+            "data": {
+                "username": username,
+                "email": email,
+                "access_token": access_token,
+            }
+        }
+    )
 
 
 @private_method
@@ -305,33 +501,76 @@ async def promote(
     public_id: str,
     current_user: Dict[str, Any] = Depends(decode_access_token),
     db: AsyncSession = Depends(get_db_session),
-):
-    """
-    API endpoint: promote a given user to superuser
-    by access token.
+    status_code: int = status.HTTP_200_OK,
+) -> JSONResponse:
+    """Promotes a user to superuser.
 
-    @param public_id:
-    @param current_user:
-    @param db:
-    @return:
+    Promotes a user to superuser with their public ID; only the users who
+    already is a superuser can perform this action.
+
+    Args:
+        public_id: The public ID of the user whom to be promoted.
+        current_user: The current user object that is retrieved from decoding the access token.
+            The current user must be a superuser.
+        db: The database session object, which will be populated by the dependency injection
+            method `get_db_session` automatically.
+        status_code: The default status_code to be returned when the request is successful.
+
+    Returns:
+        A JSONResponse object with the following fields:
+            status: The status of the request.
+            message: The message of the request.
+            data: The data of the request.
+                |- status: The status of the request.
+                |- message: The message of the request.
     """
-    return await promote_user(current_user, public_id, db)
+    result = await promote_user(current_user, public_id, db)
+
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "status": "success" if result else "failed",
+            "message": "User promoted successfully." if result else "User promotion failed.",
+        }
+    )
 
 
 @private_method
 @router.get("/new-api-key/{email}", include_in_schema=False)
-async def get_new_api_key(
+async def generate_api_key(
     email: str,
-    db: AsyncSession = Depends(get_db_session)
-) -> Dict[str, Any]:
-    """
-    API endpoint: create a new access token.
+    db: AsyncSession = Depends(get_db_session),
+    status_code: int = status.HTTP_200_OK,
+) -> JSONResponse:
+    """Creates new API key.
 
-    @param email: of the user
-    @param db:
-    @return:
+    Args:
+        email: The email of the user.
+        db: The database session object, which will be populated by the dependency injection
+            method `get_db_session` automatically.
+        status_code: The default status_code to be returned when the request is successful.
+
+    Returns:
+        A JSONResponse object with the following fields:
+            status: The status of the request.
+            message: The message of the request.
+            data: The data of the request.
+                |- status: The status of the request.
+                |- message: The message of the request.
+                |- data: the `api_key` enclosed in a json object.
     """
-    return await create_new_api_key(email, db)
+    api_key = await create_new_api_key(email, db)
+
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "status": "success",
+            "message": "API key generated successfully.",
+            "data": {
+                "api_key": api_key
+            }
+        }
+    )
 
 
 @private_method
@@ -339,6 +578,29 @@ async def get_new_api_key(
 async def has_registered(
     email: str,
     db: AsyncSession = Depends(get_db_session),
-):
-    request = UserCreationSchema(email=email, password='')
-    return await check_user_exist(request, db)
+    status_code: int = status.HTTP_200_OK,
+) -> JSONResponse:
+    """Checks if a user has registered
+
+    Args:
+        email: The user's email address.
+        db: The database session object, which will be populated by the dependency injection
+            method `get_db_session` automatically.
+        status_code: The default status_code to be returned when the request is successful.
+
+    Returns:
+        A JSONResponse object with the following fields:
+            status: The status of the request.
+            message: The message of the request.
+            data: The data of the request.
+                |- status: The status of the request.
+                |- message: The message of the request.
+    """
+    exists = await check_user_exist(email, db)
+    return JSONResponse(
+        status_code=status_code if exists else status.HTTP_404_NOT_FOUND,
+        content={
+            "status": "success" if exists else "failed",
+            "message": "User exists." if exists else "User does not exist.",
+        }
+    )

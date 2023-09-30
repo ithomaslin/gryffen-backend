@@ -1,4 +1,3 @@
-# -*- encoding: utf-8 -*-
 # Copyright (c) 2023, Neat Digital
 # All rights reserved.
 #
@@ -66,6 +65,9 @@ async def _engine() -> AsyncGenerator[AsyncEngine, None]:
     try:
         yield engine
     finally:
+        engine = create_async_engine(str(settings.db_url))
+        with engine.connect() as conn:
+            await conn.rollback()
         await engine.dispose()
         # await drop_database()
 

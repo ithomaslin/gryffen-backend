@@ -1,4 +1,3 @@
-# -*- encoding: utf-8 -*-
 # Copyright (c) 2023, Neat Digital
 # All rights reserved.
 #
@@ -30,7 +29,7 @@ from pathlib import Path
 from tempfile import gettempdir
 
 from dotenv import load_dotenv
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 from yarl import URL
 
 TEMP_DIR = Path(gettempdir())
@@ -68,16 +67,16 @@ class Settings(BaseSettings):
 
     log_level: LogLevel = LogLevel.INFO
 
-    scaler = int(os.getenv("NUM_BENCHMARK"))
+    scaler: int = int(os.getenv("NUM_BENCHMARK"))
 
-    gryffen_security_key = os.getenv("GRYFFEN_SECRET_KEY")
-    hashing_iteration = os.getenv("HASH_ITERATION")
-    unix_timestamp_never_expire = os.getenv("UNIX_TIMESTAMP_NEVER_EXPIRE")
+    gryffen_security_key: str = os.getenv("GRYFFEN_SECRET_KEY")
+    hashing_iteration: int = os.getenv("HASH_ITERATION")
+    unix_timestamp_never_expire: int = os.getenv("UNIX_TIMESTAMP_NEVER_EXPIRE")
 
     # Access token
-    access_token_hash_algorithm = os.getenv("ACCESS_TOKEN_HASH_ALGO")
-    access_token_duration_minute = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
-    oauth_token_duration_minute = os.getenv("OAUTH_TOKEN_EXPIRE_MINUTES")
+    access_token_hash_algorithm: str = os.getenv("ACCESS_TOKEN_HASH_ALGO")
+    access_token_duration_minute: int = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
+    oauth_token_duration_minute: int = os.getenv("OAUTH_TOKEN_EXPIRE_MINUTES")
 
     # Variables for the database
     db_host: str = os.getenv("DB_HOST")
@@ -88,18 +87,18 @@ class Settings(BaseSettings):
     db_echo: bool = False
 
     # Finnhub
-    finnhub_ws_endpoint = os.getenv("FINNHUB_WEBSOCKET_URI")
-    finnhub_api_key = os.getenv("FINNHUB_API_KEY")
+    finnhub_ws_endpoint: str = os.getenv("FINNHUB_WEBSOCKET_URI")
+    finnhub_api_key: str = os.getenv("FINNHUB_API_KEY")
 
     # TD Ameritrade
-    td_ameritrade_api_key = os.getenv("TD_API_CONSUMER_KEY")
-    td_ameritrade_auth_url = os.getenv("TD_API_AUTH_URL")
-    td_ameritrade_base_url = os.getenv("TD_API_BASE_URL")
-    td_ameritrade_auth_endpoint = os.getenv("TD_API_AUTH_URL")
-    td_ameritrade_orders_endpoint = os.getenv("TD_API_ORDERS_URL")
-    td_ameritrade_redirect_uri = os.getenv("TD_API_REDIRECT_URL")
+    td_ameritrade_api_key: str = os.getenv("TD_API_CONSUMER_KEY")
+    td_ameritrade_auth_url: str = os.getenv("TD_API_AUTH_URL")
+    td_ameritrade_base_url: str = os.getenv("TD_API_BASE_URL")
+    td_ameritrade_auth_endpoint: str = os.getenv("TD_API_AUTH_URL")
+    td_ameritrade_orders_endpoint: str = os.getenv("TD_API_ORDERS_URL")
+    td_ameritrade_redirect_uri: str = os.getenv("TD_API_REDIRECT_URL")
 
-    front_end_ip_address = [
+    front_end_ip_address: list = [
         os.getenv("FRONT_END_BASE_URL"),
     ]
 

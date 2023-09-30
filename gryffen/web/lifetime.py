@@ -1,4 +1,3 @@
-# -*- encoding: utf-8 -*-
 # Copyright (c) 2023, Neat Digital
 # All rights reserved.
 #
@@ -41,19 +40,6 @@ BASE_DIR = Path(__file__).resolve().parent
 template = Jinja2Templates(directory=str(Path(BASE_DIR, 'templates')))
 
 
-# def https_url_for(request: Request, name: str, **path_params: Any) -> str:
-#     """
-#
-#     @param request:
-#     @param name:
-#     @param path_params:
-#     @return:
-#     """
-#     http_url = request.url_for(name, **path_params)
-#     # Replace 'http' with 'https'
-#     return http_url.replace("http", "https", 1)
-
-
 def _setup_db(app: FastAPI) -> None:  # pragma: no cover
     """
     Creates connection to the database.
@@ -94,6 +80,14 @@ def register_startup_event(
         "https://tradinglab.app",
     ]
 
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
     @app.on_event("startup")
     async def _startup() -> None:  # noqa: WPS430
         _setup_db(app)
@@ -101,14 +95,6 @@ def register_startup_event(
         await global_listener.start_listening()
 
         template.env.globals["URL"] = URL
-
-        app.add_middleware(
-            CORSMiddleware,
-            allow_origins=origins,
-            allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"],
-        )
         pass
 
     return _startup
@@ -127,7 +113,6 @@ def register_shutdown_event(
     @app.on_event("shutdown")
     async def _shutdown() -> None:  # noqa: WPS430
         await app.state.db_engine.dispose()
-
         pass  # noqa: WPS420
 
     return _shutdown
