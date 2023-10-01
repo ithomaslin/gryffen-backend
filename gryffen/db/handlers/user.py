@@ -25,7 +25,7 @@ Date: 22/04/2023
 
 import uuid
 import jwt
-from typing import Dict, Any, Optional
+from typing import Dict, Optional
 from datetime import datetime, timedelta
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -33,13 +33,12 @@ from fastapi import HTTPException, status, security, Depends
 
 from gryffen.db.models.users import User
 from gryffen.db.dependencies import get_db_session
-from gryffen.security import create_access_token, verify_password
 from gryffen.db.handlers.activation import verify_activation_code
 from gryffen.web.api.v1.user.schema import (
     UserCreationSchema, UserAuthenticationSchema
 )
 from gryffen.settings import settings
-from gryffen.security import hashing
+from gryffen.security import hashing, TokenBase, verify_password
 from gryffen.logging import logger
 
 
@@ -166,7 +165,7 @@ async def social_authenticate_user(
 
 
 async def get_user_by_token(
-    current_user: Dict[str, Any],
+    user_info: TokenBase,
     db: AsyncSession
 ) -> Optional[User]:
     """Fetches user object by token.
@@ -175,13 +174,13 @@ async def get_user_by_token(
     is returned. Otherwise, None is returned.
 
     Args:
-        current_user: The current user object.
+        user_info: The current user object.
         db: The database session.
 
     Returns:
         User: The user object.
     """
-    stmt = select(User).where(User.username == current_user.get("username"))
+    stmt = select(User).where(User.public_id == user_info.public_id)
     usr: User = await db.scalar(stmt)
     if usr:
         logger.info(
@@ -189,7 +188,7 @@ async def get_user_by_token(
         )
         return usr
 
-    logger.info(f"[{datetime.utcnow()}] User {current_user.get('username')} not found.")
+    logger.info(f"[{datetime.utcnow()}] User with email: {user_info.email} is not found.")
     return None
 
 
@@ -236,24 +235,17 @@ async def activate_user(
     Returns:
         Tuple: Tuple of username, email and access token.
     """
-    decoded_token = await verify_activation_code(activation_code, db)
-    usr = await db.execute(
-        select(User).where(User.id == decoded_token.get("user_id")),
+    tb: TokenBase = await verify_activation_code(activation_code, db)
+    usr: User = await db.scalar(
+        select(User).where(User.public_id == tb.public_id),
     )
 
-    if usr.scalar():
-        access_token = create_access_token(
-            {
-                "id": decoded_token.get("user_id"),
-                "username": decoded_token.get("username"),
-                "email": decoded_token.get("email"),
-            },
-        )
+    if usr:
+        token = await oauth_create_token(usr)
         stmt = (
             update(User)
-            .where(User.id == decoded_token.get("user_id"))
+            .where(User.public_id == tb.public_id)
             .values(
-                access_token=access_token,
                 is_active=True,
                 timestamp_updated=datetime.utcnow(),
             )
@@ -265,18 +257,19 @@ async def activate_user(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="The activation code is invalid or expired."
         )
-    return decoded_token.get("username"), decoded_token.get("email"), access_token
+    return tb.email, tb.public_id, token
 
 
 async def promote_user(
-    current_user: Dict[str, Any],
+    user_info: TokenBase,
     public_id: str,
     db: AsyncSession
 ) -> bool:
     """Promotes a user
 
     Args:
-        current_user: User who performs this action.
+        user_info: The TokenBase object which contains user's info,
+            is retrieved from decoding the access token.
         public_id: The public ID of the user to be promoted.
         db: The database session.
 
@@ -286,7 +279,7 @@ async def promote_user(
     Returns:
         bool: True if the user is successfully promoted.
     """
-    stmt = select(User).where(User.username == current_user.get("username"))
+    stmt = select(User).where(User.public_id == user_info.public_id)
 
     usr: User = await db.scalar(stmt)
     if not usr.is_superuser:
@@ -324,11 +317,11 @@ async def create_new_api_key(
     stmt = select(User).where(User.email == email)
     current_user: User = await db.scalar(stmt)
     if current_user:
-        api_key = create_access_token({
-            "id": current_user.id,
-            "username": current_user.username,
-            "email": current_user.email,
-        })
+        token_base = TokenBase(email=current_user.email, public_id=current_user.public_id)
+        api_key = token_base.tokenize()
+        logger.info(
+            f"[{datetime.utcnow()}] User {current_user.username} created new API key."
+        )
         stmt = (
             update(User)
             .where(User.id == current_user.id)
