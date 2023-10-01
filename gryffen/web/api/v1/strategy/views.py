@@ -1,4 +1,3 @@
-# -*- encoding: utf-8 -*-
 # Copyright (c) 2023, Neat Digital
 # All rights reserved.
 #
@@ -36,14 +35,14 @@ from gryffen.db.handlers.strategy import (
     deactivate_strategy,
 )
 from gryffen.web.api.v1.strategy.schema import StrategyCreationSchema
-from gryffen.security import decode_access_token
+from gryffen.security import destruct_token
 
 router = APIRouter(prefix="/strategy")
 
 
 @router.get("/")
 async def get(
-    current_user: Dict[str, Any] = Depends(decode_access_token),
+    current_user: Dict[str, Any] = Depends(destruct_token),
     db: AsyncSession = Depends(get_db_session),
 ):
     """
@@ -64,7 +63,7 @@ async def get(
 @router.post("/create")
 async def create(
     request: StrategyCreationSchema,
-    current_user: Dict[str, Any] = Depends(decode_access_token),
+    current_user: Dict[str, Any] = Depends(destruct_token),
     db: AsyncSession = Depends(get_db_session),
 ):
     """
@@ -90,7 +89,7 @@ async def create(
 @router.put("/deactivate/{strategy_id}")
 async def deactivate(
     strategy_id: int,
-    current_user: Dict[str, Any] = Depends(decode_access_token),
+    current_user: Dict[str, Any] = Depends(destruct_token),
     db: AsyncSession = Depends(get_db_session),
 ):
     """

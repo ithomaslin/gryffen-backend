@@ -1,4 +1,3 @@
-# -*- encoding: utf-8 -*-
 # Copyright (c) 2023, Neat Digital
 # All rights reserved.
 #
@@ -24,13 +23,12 @@ Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
 Date: 22/04/2023
 """
 
-from urllib import parse
 from fastapi import APIRouter, Depends
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gryffen.db.dependencies import get_db_session
-from gryffen.security import decode_access_token
+from gryffen.security import destruct_token
 from gryffen.db.models.credentials import Credential
 from gryffen.web.api.v1.credential.schema import CredentialCreationSchema
 from gryffen.db.handlers.credential import (
@@ -43,7 +41,7 @@ router = APIRouter(prefix="/credential")
 
 @router.get("/")
 async def get(
-    current_user: Dict[str, Any] = Depends(decode_access_token),
+    current_user: Dict[str, Any] = Depends(destruct_token),
     db: AsyncSession = Depends(get_db_session),
 ):
     """
@@ -64,7 +62,7 @@ async def get(
 @router.post("/")
 async def create(
     request: CredentialCreationSchema,
-    current_user: Dict[str, Any] = Depends(decode_access_token),
+    current_user: Dict[str, Any] = Depends(destruct_token),
     db: AsyncSession = Depends(get_db_session)
 ):
     """
