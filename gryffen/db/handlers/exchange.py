@@ -1,4 +1,3 @@
-# -*- encoding: utf-8 -*-
 # Copyright (c) 2023, Neat Digital
 # All rights reserved.
 #
@@ -19,7 +18,7 @@
 
 """Exchange handlers."""
 
-from typing import Dict
+from typing import List
 from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -27,6 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from gryffen.db.models.users import User
 from gryffen.db.models.exchanges import Exchange
+from gryffen.security import TokenBase
 from gryffen.web.api.v1.exchange.schema import ExchangeCreationSchema
 
 
@@ -34,14 +34,16 @@ async def create_exchange(
     user_id: int,
     submission: ExchangeCreationSchema,
     db: AsyncSession,
-):
-    """
-    Writes exchange object into the DB.
+) -> Exchange:
+    """Creates a new exchange broker.
 
-    @param user_id:
-    @param submission:
-    @param db:
-    @return:
+    Args:
+        user_id: The user id.
+        submission: The exchange submission.
+        db: The database session object.
+
+    Returns:
+        The created exchange.
     """
     exchange = Exchange(
         name=submission.name,
@@ -60,21 +62,24 @@ async def create_exchange(
 
 
 async def get_exchanges_by_token(
-    decoded_token: Dict,
+    user_info: TokenBase,
     db: AsyncSession,
     is_active: bool = True,
-):
-    """
-    Retrieves exchange object from the DB by token.
-    @param decoded_token:
-    @param db:
-    @param is_active:
-    @return:
+) -> List[Exchange]:
+    """Gets exchanges by the TokenBase object.
+
+    Args:
+        user_info: The TokenBase object that contains user info.
+        db: The database session object.
+        is_active: Whether to fetch only active exchanges or not; default to True
+
+    Returns:
+        The list of exchanges.
     """
     stmt = (
         select(User)
         .where(
-            User.username == decoded_token.get("username")
+            User.public_id == user_info.public_id
             and User.exchanges.any(Exchange.is_active == is_active)
         )
         .options(selectinload(User.exchanges))

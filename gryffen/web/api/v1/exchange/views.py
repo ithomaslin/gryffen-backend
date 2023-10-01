@@ -23,13 +23,17 @@ Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
 Date: 22/04/2023
 """
 
-from fastapi import APIRouter, Depends
-from typing import Dict, Any
+from typing import List
+from fastapi import APIRouter, Depends, status
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gryffen.db.dependencies import get_db_session
-from gryffen.security import destruct_token
+from gryffen.security import TokenBase, destruct_token
 from gryffen.db.models.exchanges import Exchange
+from gryffen.db.models.users import User
+from gryffen.db.handlers.user import get_user_by_token
 from gryffen.db.handlers.exchange import (
     create_exchange, get_exchanges_by_token
 )
@@ -41,44 +45,70 @@ router = APIRouter(prefix="/exchange")
 
 @router.get("/")
 async def get(
-    current_user: Dict[str, Any] = Depends(destruct_token),
-    db: AsyncSession = Depends(get_db_session)
-):
+    user_info: TokenBase = Depends(destruct_token),
+    db: AsyncSession = Depends(get_db_session),
+    status_code: int = status.HTTP_200_OK
+) -> JSONResponse:
+    """Fetches all exchange brokers.
+
+    Retrieves all exchange brokers for a given user by access token.
+
+    Args:
+        user_info: The decoded access token as the TokenBase object.
+        db: The database session object, which will be populated by the dependency injection
+            method `get_db_session` automatically.
+        status_code: The default status_code to be returned when the request is successful.
+
+    Returns:
+        JSONResponse: The json object with all the exchanges' info.
     """
-    API endpoint: fetch all exchanges of a given user by access token.
-    @param current_user:
-    @param db:
-    @return:
-    """
-    exchanges: Exchange = await get_exchanges_by_token(current_user, db)
-    return {
-        "status": "success",
-        "message": "Exchanges fetched successfully.",
-        "data": {"exchanges": exchanges}
-    }
+    exchanges: List[Exchange] = await get_exchanges_by_token(user_info, db)
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "status": "success",
+            "message": "Exchanges fetched successfully.",
+            "data": {
+                "exchanges": jsonable_encoder(exchanges)
+            }
+        }
+    )
 
 
 @router.post("/")
 async def create(
     request: ExchangeCreationSchema,
-    current_user: Dict[str, Any] = Depends(destruct_token),
-    db: AsyncSession = Depends(get_db_session)
-):
-    """
-    API endpoint: create an exchange for a given user by access token.
+    user_info: TokenBase = Depends(destruct_token),
+    db: AsyncSession = Depends(get_db_session),
+    status_code: int = status.HTTP_201_CREATED,
+) -> JSONResponse:
+    """Creates an exchange broker.
 
-    @param request:
-    @param current_user:
-    @param db:
-    @return:
+    Creates an exchange broker for a given user by access token.
+
+    Args:
+        request: The exchange creation schema.
+        user_info: The decoded access token as the TokenBase object.
+        db: The database session object, which will be populated by the dependency injection
+            method `get_db_session` automatically.
+        status_code: The default status_code to be returned when the request is successful.
+
+    Returns:
+        JSONResponse: The json object with the created exchange's info.
     """
+    usr: User = await get_user_by_token(user_info, db)
     exchange: Exchange = await create_exchange(
-        user_id=current_user.get("id"),
+        user_id=usr.id,
         submission=request,
         db=db
     )
-    return {
-        "status": "success",
-        "message": "Exchange created successfully.",
-        "data": {"exchange": exchange}
-    }
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "status": "success",
+            "message": "Exchange created successfully.",
+            "data": {
+                "exchange": jsonable_encoder(exchange)
+            }
+        }
+    )

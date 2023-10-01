@@ -23,18 +23,27 @@ Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
 Date: 22/04/2023
 """
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from typing import Optional
 
 
 class CredentialCreationSchema(BaseModel):
 
+    """The CredentialCreationSchema is used to define the data object
+
+    Attributes:
+        exchange_id (int): The exchange id
+        credential (str): The credential string
+        type (str): The type of the credential
+        scope (str): The scope of the credential
+        expires_at (datetime): The expiration date
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
     exchange_id: int
     credential: str
     type: str
     scope: str
     expires_at: Optional[datetime] = None
-
-    class Config:
-        from_attributes = True

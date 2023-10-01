@@ -1,4 +1,3 @@
-# -*- encoding: utf-8 -*-
 # Copyright (c) 2023, Neat Digital
 # All rights reserved.
 #
@@ -24,12 +23,13 @@ Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
 Date: 22/04/2023
 """
 
-from typing import Dict
+from typing import List
 from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from gryffen.security import TokenBase
 from gryffen.db.models.users import User
 from gryffen.db.models.exchanges import Exchange
 from gryffen.db.models.credentials import Credential
@@ -40,14 +40,16 @@ async def create_credential(
     user_id: User.id,
     submission: CredentialCreationSchema,
     db: AsyncSession,
-):
-    """
-    Writes credential object into the DB.
+) -> Credential:
+    """Creates a new credential for a specific exchange under a user.
 
-    @param user_id:
-    @param submission:
-    @param db:
-    @return:
+    Args:
+        user_id: The ID of the user.
+        submission: The schema object that contains the credential data.
+        db: The database session object.
+
+    Returns:
+        The created credential.
     """
     credential = Credential(
         exchange_id=submission.exchange_id,
@@ -68,21 +70,21 @@ async def create_credential(
 
 
 async def get_credentials_by_token(
-    decoded: Dict,
+    user_info: TokenBase,
     db: AsyncSession
-):
-    """
-    Get credential objects by token.
+) -> List[Credential]:
+    """Gets all credentials under a user.
 
-    @param decoded:
-    @param db:
-    @return:
+    Args:
+        user_info: The TokenBase object that contains user info.
+        db: The database session object.
+
+    Returns:
+        The list of credentials.
     """
     stmt = (
         select(User)
-        .where(
-            User.username == decoded.get("username")
-        )
+        .where(User.public_id == user_info.public_id)
         .options(
             selectinload(User.credentials)
         )
@@ -94,19 +96,19 @@ async def get_credentials_by_token(
 async def get_credential_by_exchange_id(
     exchange_id: Exchange.id,
     db: AsyncSession
-):
-    """
-    Get credential objects by exchange_id.
+) -> Credential:
+    """Gets Credential by exchange ID.
 
-    @param exchange_id:
-    @param db:
-    @return:
+    Args:
+        exchange_id: The ID of the exchange broker.
+        db: The database session object.
+
+    Returns:
+        The exchange object.
     """
     stmt = (
         select(Credential)
-        .where(
-            Credential.exchange_id == exchange_id
-        )
+        .where(Credential.exchange_id == exchange_id)
     )
     credential_obj: Credential = await db.scalar(stmt)
     return credential_obj

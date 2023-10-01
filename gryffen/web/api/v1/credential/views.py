@@ -23,13 +23,17 @@ Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
 Date: 22/04/2023
 """
 
-from fastapi import APIRouter, Depends
-from typing import Dict, Any
+from fastapi import APIRouter, Depends, status
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
+from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gryffen.db.dependencies import get_db_session
-from gryffen.security import destruct_token
+from gryffen.db.models.users import User
 from gryffen.db.models.credentials import Credential
+from gryffen.security import TokenBase, destruct_token
+from gryffen.db.handlers.user import get_user_by_token
 from gryffen.web.api.v1.credential.schema import CredentialCreationSchema
 from gryffen.db.handlers.credential import (
     create_credential, get_credentials_by_token
@@ -41,45 +45,66 @@ router = APIRouter(prefix="/credential")
 
 @router.get("/")
 async def get(
-    current_user: Dict[str, Any] = Depends(destruct_token),
+    user_info: TokenBase = Depends(destruct_token),
     db: AsyncSession = Depends(get_db_session),
-):
-    """
-    API endpoint: fetch all credentials of a given user by access token.
+    status_code: int = status.HTTP_200_OK,
+) -> JSONResponse:
+    """Gets all the credentials associated with a user.
 
-    @param current_user:
-    @param db:
-    @return:
+    Args:
+        user_info: The decoded access token as the TokenBase object.
+        db: The database session object, which will be populated by the dependency injection
+            method `get_db_session` automatically.
+        status_code: The default status_code to be returned when the request is successful.
+
+    Returns:
+        The JSONResponse of the credential objects
     """
-    credentials: Credential = await get_credentials_by_token(current_user, db)
-    return {
-        "status": "success",
-        "message": "Credentials fetched successfully.",
-        "data": {"credentials": credentials}
-    }
+    credentials: List[Credential] = await get_credentials_by_token(user_info, db)
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "status": "success",
+            "message": "Credentials retrieved successfully.",
+            "data": {
+                "credentials": jsonable_encoder(credentials)
+            }
+        }
+    )
 
 
 @router.post("/")
 async def create(
     request: CredentialCreationSchema,
-    current_user: Dict[str, Any] = Depends(destruct_token),
-    db: AsyncSession = Depends(get_db_session)
-):
-    """
-    API endpoint: create a credential for a given user by access token.
+    user_info: TokenBase = Depends(destruct_token),
+    db: AsyncSession = Depends(get_db_session),
+    status_code: int = status.HTTP_201_CREATED,
+) -> JSONResponse:
+    """Creates a new credential entry and link to an existing exchange.
 
-    @param request:
-    @param current_user:
-    @param db:
-    @return:
+    Args:
+        request: The Credential creation schema.
+        user_info: The decoded access token as the TokenBase object.
+        db: The database session object, which will be populated by the dependency injection
+            method `get_db_session` automatically.
+        status_code: The default status_code to be returned when the request is successful.
+
+    Returns:
+        The JSONResponse of the credential object that's just created.
     """
+    usr: User = await get_user_by_token(user_info, db)
     credential = await create_credential(
-        user_id=current_user.get("id"),
+        user_id=usr.id,
         submission=request,
         db=db
     )
-    return {
-        "status": "success",
-        "message": "Credential created successfully.",
-        "data": {"credential": credential}
-    }
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "status": "success",
+            "message": "Credential created successfully.",
+            "data": {
+                "credential": jsonable_encoder(credential)
+            }
+        }
+    )
