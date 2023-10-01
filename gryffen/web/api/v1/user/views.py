@@ -23,14 +23,12 @@ Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
 Date: 22/04/2023
 """
 
-from typing import Any, Dict
 from fastapi import APIRouter, Depends, HTTPException, Form, status, security
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
-from deprecated import deprecated
 
-from gryffen.security import decode_access_token
+from gryffen.security import TokenBase, destruct_token
 from gryffen.db.dependencies import get_db_session
 from gryffen.web.api.utils import GriffinMailService, private_method
 from gryffen.db.models.users import User
@@ -61,7 +59,6 @@ router = APIRouter(prefix="/user")
 
 
 @private_method
-
 @router.post("/create", include_in_schema=False)
 async def create_user(
     request: UserCreationSchema,
@@ -75,21 +72,21 @@ async def create_user(
     Args:
         request: The request schema for creating a new user, request body should contain
             the following fields:
-                |- email
-                |- password
-                |- register_via
-                |- external_uid
-                |- first_name
-                |- last_name
+                - email
+                - password
+                - register_via
+                - external_uid
+                - first_name
+                - last_name
         db: The database session object, which will be populated by the dependency injection
             method `get_db_session` automatically.
         status_code: The default status_code to be returned when the request is successful.
 
     Returns:
         A JSONResponse object with the following fields:
-            |- status: The status of the request.
-            |- message: The message of the request.
-            |- data: The data of the request.
+            - status: The status of the request.
+            - message: The message of the request.
+            - data: The data of the request.
     """
     valid = await request.is_valid()
     user_exists = await check_user_exist(request.email, db)
@@ -105,14 +102,14 @@ async def create_user(
         )
 
     user: User = await create_user(request, db)
-    activation_code_obj = await create_activation_code(
-        user.id, user.username, user.email, db
+    activation_code: str = await create_activation_code(
+        user.public_id, user.id, user.email, db
     )
 
     service = GriffinMailService()
     service.send(
         to=user.email,
-        code=activation_code_obj.activation_code
+        code=activation_code
     )
 
     return JSONResponse(
@@ -122,7 +119,7 @@ async def create_user(
             "message": "User created.",
             "data": {
                 "user": jsonable_encoder(user),
-                "activation_code": activation_code_obj.activation_code,
+                "activation_code": activation_code,
                 "info": "Please activate your account within 15 minutes."
             }
         }
@@ -167,14 +164,14 @@ async def create_user_via_form(
         )
 
     usr: User = await create_user(submission, db)
-    activation_code_obj = await create_activation_code(
+    activation_code: str = await create_activation_code(
         usr.id, usr.username, usr.email, db
     )
 
     mail_service = GriffinMailService()
     mail_service.send(
         to=usr.email,
-        code=activation_code_obj.activation_code
+        code=activation_code
     )
 
     return JSONResponse(
@@ -184,7 +181,7 @@ async def create_user_via_form(
             "message": "User created.",
             "data": {
                 "user": jsonable_encoder(usr),
-                "activation_code": activation_code_obj.activation_code,
+                "activation_code": activation_code,
                 "info": "Please activate your account within 15 minutes."
             }
         }
@@ -213,8 +210,8 @@ async def login_for_oauth_token(
             status: The status of the request.
             message: The message of the request.
             data: The data of the request.
-                |- user: The user object.
-                |- token: The access token object.
+                - user: The user object.
+                - token: The access token object.
     """
     try:
         usr: User = await authenticate_user(
@@ -276,8 +273,8 @@ async def social_login(
             status: The status of the request.
             message: The message of the request.
             data: The data of the request.
-                |- user: The user object.
-                |- token: The access token object.
+                - user: The user object.
+                - token: The access token object.
     """
     try:
         usr: User = await social_authenticate_user(request.email, request.external_uid, db)
@@ -328,7 +325,7 @@ async def oauth_refresh(
             status: The status of the request.
             message: The message of the request.
             data: The data of the request.
-                |- token: The access token object.
+                - token: The access token object.
     """
     token = await oauth_refresh_token(refresh_token, db)
 
@@ -346,7 +343,7 @@ async def oauth_refresh(
 
 @router.get("/me")
 async def get_user(
-    current_user: Dict[str, Any] = Depends(decode_access_token),
+    user_info: TokenBase = Depends(destruct_token),
     db: AsyncSession = Depends(get_db_session),
     status_code: int = status.HTTP_200_OK,
 ) -> JSONResponse:
@@ -355,7 +352,7 @@ async def get_user(
     Retrieves user's information.
 
     Args:
-        current_user: The user object that is retrieved from decoding the access token.
+        user_info: The TokenBase object which contains user's info, is retrieved from decoding the access token.
         db: The database session object, which will be populated by the dependency injection
             method `get_db_session` automatically.
         status_code: The default status_code to be returned when the request is successful.
@@ -365,9 +362,9 @@ async def get_user(
             status: The status of the request.
             message: The message of the request.
             data: The data of the request.
-                |- user: The user object.
+                - user: The user object.
     """
-    usr: User = await get_user_by_token(current_user, db)
+    usr: User = await get_user_by_token(user_info, db)
     return JSONResponse(
         status_code=status_code,
         content={
@@ -435,12 +432,13 @@ async def reissue_activation(
             status: The status of the request.
             message: The message of the request.
     """
-    activation_code_obj = await reissue_activation_code(email, db)
+    activation_code = await reissue_activation_code(email, db)
     mail_service = GriffinMailService()
     mail_service.send(
         to=email,
-        code=activation_code_obj.activation_code
+        code=activation_code
     )
+
     return JSONResponse(
         status_code=status_code,
         content={
@@ -475,11 +473,11 @@ async def activate(
             status: The status of the request.
             message: The message of the request.
             data: The data of the request.
-                |- username: The username of the user.
-                |- email: The email of the user.
-                |- access_token: The access token of the user.
+                - email: The email of the user.
+                - public_id: The public ID of the user.
+                - access_token: The access token of the user.
     """
-    username, email, access_token = await activate_user(activation_code, db)
+    email, public_id, access_token = await activate_user(activation_code, db)
 
     return JSONResponse(
         status_code=status_code,
@@ -487,8 +485,8 @@ async def activate(
             "status": "success",
             "message": "User activated successfully.",
             "data": {
-                "username": username,
                 "email": email,
+                "public_id": public_id,
                 "access_token": access_token,
             }
         }
@@ -499,7 +497,7 @@ async def activate(
 @router.post("/promote/{public_id}", include_in_schema=False)
 async def promote(
     public_id: str,
-    current_user: Dict[str, Any] = Depends(decode_access_token),
+    user_info: TokenBase = Depends(destruct_token),
     db: AsyncSession = Depends(get_db_session),
     status_code: int = status.HTTP_200_OK,
 ) -> JSONResponse:
@@ -510,7 +508,7 @@ async def promote(
 
     Args:
         public_id: The public ID of the user whom to be promoted.
-        current_user: The current user object that is retrieved from decoding the access token.
+        user_info: The TokenBase object which contains user's info, is retrieved from decoding the access token.
             The current user must be a superuser.
         db: The database session object, which will be populated by the dependency injection
             method `get_db_session` automatically.
@@ -521,10 +519,10 @@ async def promote(
             status: The status of the request.
             message: The message of the request.
             data: The data of the request.
-                |- status: The status of the request.
-                |- message: The message of the request.
+                - status: The status of the request.
+                - message: The message of the request.
     """
-    result = await promote_user(current_user, public_id, db)
+    result = await promote_user(user_info, public_id, db)
 
     return JSONResponse(
         status_code=status_code,
@@ -555,9 +553,9 @@ async def generate_api_key(
             status: The status of the request.
             message: The message of the request.
             data: The data of the request.
-                |- status: The status of the request.
-                |- message: The message of the request.
-                |- data: the `api_key` enclosed in a json object.
+                - status: The status of the request.
+                - message: The message of the request.
+                - data: the `api_key` enclosed in a json object.
     """
     api_key = await create_new_api_key(email, db)
 
@@ -593,8 +591,8 @@ async def has_registered(
             status: The status of the request.
             message: The message of the request.
             data: The data of the request.
-                |- status: The status of the request.
-                |- message: The message of the request.
+                - status: The status of the request.
+                - message: The message of the request.
     """
     exists = await check_user_exist(email, db)
     return JSONResponse(

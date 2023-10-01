@@ -23,16 +23,15 @@ Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
 Date: 22/04/2023
 """
 
-import binascii
-import hashlib
 import os
-from datetime import datetime, timedelta
-from typing import Optional, Dict, Any
-
 import jwt
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+import hashlib
+import binascii
 from jwt import PyJWTError
+from datetime import datetime, timedelta
+from fastapi import HTTPException, status
+from pydantic import BaseModel, ConfigDict
+from fastapi.security import OAuth2PasswordBearer
 
 from gryffen.settings import settings
 from gryffen.logging import logger
@@ -41,11 +40,18 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 def hashing(password: str) -> hashlib.sha256:
-    """
-    Generate a hashed password.
+    """Hashes the password.
 
-    @param: password: user password
-    @return: byte
+    Encrypts the password from a plain string to a byte string.
+    The byte string is then hashed using the SHA-256 algorithm.
+    The byte string is then encoded to a hex string.
+    The hex string is then returned.
+
+    Args:
+        password: The password to be hashed.
+
+    Returns:
+        hashlib.sha256: The hashed password.
     """
     if password is None:
         return None
@@ -57,11 +63,14 @@ def hashing(password: str) -> hashlib.sha256:
 
 
 def verify_password(provided_password: str, stored_password: hashlib.sha256()) -> bool:
-    """
-    Verify a stored password against one provided by user
-    :param provided_password:
-    :param stored_password:
-    :return:
+    """Verifies if the user provided password matches the stored password.
+
+    Args:
+        provided_password: The password provided by the user when logging in.
+        stored_password: The password stored in the database.
+
+    Returns:
+        bool: True if passwords match, False otherwise.
     """
     stored_password = stored_password.decode('ascii')
     salt = stored_password[:64]
@@ -73,57 +82,96 @@ def verify_password(provided_password: str, stored_password: hashlib.sha256()) -
     return password_hash == stored_password
 
 
-def create_access_token(data: Dict, expire_delta: Optional[timedelta] = None) -> str:
-    """
-    Create access token.
+class TokenBase(BaseModel):
 
-    @param data: {"id": "<USER_ID>", "username": "<USERNAME>", "email":"<EMAIL>"}
-    @param expire_delta:
-    @return:
-    """
-    to_encode = data.copy()
-    if expire_delta:
-        expire = datetime.utcnow() + expire_delta
-    else:
-        expire = datetime.utcnow() + timedelta(
-            minutes=int(settings.access_token_duration_minute),
-        )
-    to_encode.update({"expires": int(datetime.timestamp(expire))})
-    encoded_jwt = jwt.encode(
-        to_encode,
-        settings.gryffen_security_key,
-        algorithm=settings.access_token_hash_algorithm,
-    )
-    return encoded_jwt
+    """The TokenBase class to be used as the base object for all token objects.
 
-
-def decode_access_token(token: str = Depends(oauth2_scheme)) -> Dict[str, Any]:
+    Attributes:
+        email: The email of the user.
+        public_id: The public_id of the user.
+        token: The token of the user.
+        expiration: The expiration of the token.
     """
-    Decode access token.
 
-    @param token: of the user
-    @return:
-    """
-    credential_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Credential invalid, make sure you have the valid credential.",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    try:
-        payload = jwt.decode(
-            token,
+    model_config = ConfigDict(from_attributes=True)
+
+    email: str | None = None
+    public_id: str | None = None
+    token: str | None = None
+    expiration: datetime | None = None
+
+    def tokenize(self, expiration_delta: timedelta | None = None) -> str:
+        """Creates token
+
+        Args:
+            expiration_delta: The time delta of which the token to be expired.
+
+        Returns:
+            str: The tokenized string.
+        """
+        to_encode: dict = self.model_dump(exclude={'token', 'expiration'})
+        if expiration_delta:
+            expire = datetime.utcnow() + expiration_delta
+        else:
+            expire = datetime.utcnow() + timedelta(
+                minutes=int(settings.access_token_duration_minute),
+            )
+        to_encode.update({"expires": int(datetime.timestamp(expire))})
+        encoded_jwt = jwt.encode(
+            to_encode,
             settings.gryffen_security_key,
-            algorithms=settings.access_token_hash_algorithm,
+            algorithm=settings.access_token_hash_algorithm,
         )
-        username: str = payload.get("username")
-        expires: datetime = datetime.fromtimestamp(payload.get("expires"))
-        if username is None:
-            logger.error("Invalid credential - User not found.")
+        return encoded_jwt
+
+    def detokenize(self) -> None:
+        """Decodes token string into TokenBase class object.
+
+        Returns:
+            TokenBase: The TokenBase class object, which contains user's info:
+                - email
+                - public_id
+        """
+        credential_exception = HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Credential invalid, make sure you have the valid credential.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+        try:
+            payload = jwt.decode(
+                self.token,
+                settings.gryffen_security_key,
+                algorithms=settings.access_token_hash_algorithm,
+            )
+            self.email: str = payload.get("email")
+            self.public_id: str = payload.get("public_id")
+            self.expiration: datetime = datetime.fromtimestamp(payload.get("expires"))
+
+            if self.email is None or self.public_id is None:
+                logger.error("Invalid credential - User not found.")
+                raise credential_exception
+            elif self.expiration < datetime.utcnow():
+                logger.error("Invalid credential - Token expired.")
+                raise credential_exception
+
+        except PyJWTError:
+            logger.error("Invalid credential.")
             raise credential_exception
-        elif datetime.utcnow() >= expires:
-            logger.error("Invalid credential - Credential expires.")
-            raise credential_exception
-    except PyJWTError:
-        logger.error("Invalid credential.")
-        raise credential_exception
-    return payload
+
+
+def destruct_token(token: str) -> TokenBase:
+    """Decodes token string into TokenBase class object.
+
+    Notes:
+        This is a helper function for the `TokenBase.detokenize()` class method to
+        be used as the dependency injection.
+
+    Returns:
+        TokenBase: The TokenBase class object, which contains user's info:
+            - email
+            - public_id
+    """
+    token_base = TokenBase()
+    token_base.token = token
+    token_base.detokenize()
+    return token_base

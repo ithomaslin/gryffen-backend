@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gryffen"
-version = "0.3.1"
+version = "0.3.2"
 description = "A FastAPI app that automates trading strategies with different brokers."
 authors = [
     "Thomas Lin <ithomaslin@gmail.com>",

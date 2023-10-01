@@ -25,12 +25,14 @@ Date: 22/04/2023
 
 from typing import List
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, ConfigDict
 
 from gryffen.web.api.utils import is_valid_email
 
 
 class UserCreationSchema(BaseModel):
+
+    model_config = ConfigDict(from_attributes=True)
 
     email: EmailStr
     password: str | None
@@ -40,9 +42,6 @@ class UserCreationSchema(BaseModel):
     last_name: str | None
     # In-class list to capture validation errors
     __errors: List = []
-
-    class Config:
-        from_attributes = True
 
     async def is_valid(self):
         if not self.email or not is_valid_email(self.email):
@@ -55,9 +54,8 @@ class UserCreationSchema(BaseModel):
 
 class UserAuthenticationSchema(BaseModel):
 
+    model_config = ConfigDict(from_attributes=True)
+
     email: str
     password: str | None
     external_uid: str | None
-
-    class Config:
-        orm_mode = True
