@@ -1,4 +1,3 @@
-# -*- encoding: utf-8 -*-
 # Copyright (c) 2023, Neat Digital
 # All rights reserved.
 #
@@ -29,7 +28,7 @@ from typing import Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gryffen.db.dependencies import get_db_session
-from gryffen.security import decode_access_token
+from gryffen.security import destruct_token
 from gryffen.db.models.exchanges import Exchange
 from gryffen.db.handlers.exchange import (
     create_exchange, get_exchanges_by_token
@@ -42,7 +41,7 @@ router = APIRouter(prefix="/exchange")
 
 @router.get("/")
 async def get(
-    current_user: Dict[str, Any] = Depends(decode_access_token),
+    current_user: Dict[str, Any] = Depends(destruct_token),
     db: AsyncSession = Depends(get_db_session)
 ):
     """
@@ -62,7 +61,7 @@ async def get(
 @router.post("/")
 async def create(
     request: ExchangeCreationSchema,
-    current_user: Dict[str, Any] = Depends(decode_access_token),
+    current_user: Dict[str, Any] = Depends(destruct_token),
     db: AsyncSession = Depends(get_db_session)
 ):
     """
@@ -83,4 +82,3 @@ async def create(
         "message": "Exchange created successfully.",
         "data": {"exchange": exchange}
     }
-
