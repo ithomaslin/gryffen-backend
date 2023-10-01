@@ -23,81 +23,122 @@ Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
 Date: 22/04/2023
 """
 
-from fastapi import APIRouter, Depends
-from typing import Dict, Any
+from typing import Dict, Any, List
+from fastapi import APIRouter, Depends, status
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gryffen.db.dependencies import get_db_session
+from gryffen.db.models.users import User
 from gryffen.db.models.strategies import Strategy
+from gryffen.db.handlers.user import get_user_by_token
 from gryffen.db.handlers.strategy import (
     get_strategies_by_token,
     create_strategy,
     deactivate_strategy,
 )
 from gryffen.web.api.v1.strategy.schema import StrategyCreationSchema
-from gryffen.security import destruct_token
+from gryffen.security import TokenBase, destruct_token
 
 router = APIRouter(prefix="/strategy")
 
 
 @router.get("/")
 async def get(
-    current_user: Dict[str, Any] = Depends(destruct_token),
+    user_info: TokenBase = Depends(destruct_token),
     db: AsyncSession = Depends(get_db_session),
-):
-    """
-    API endpoint: fetch all strategies of a given user by access token.
+    status_code: int = status.HTTP_200_OK
+) -> JSONResponse:
+    """Gets all strategies of a user.
 
-    @param current_user:
-    @param db:
-    @return:
+    Args:
+        user_info: The decoded access token as the TokenBase object.
+        db: The database session object, which will be populated by the dependency injection
+            method `get_db_session` automatically.
+        status_code: The default status_code to be returned when the request is successful.
+
+    Returns:
+        The JSOResponse of all strategies under a user.
     """
-    strategies: Strategy = await get_strategies_by_token(current_user, db)
-    return {
-        "status": "success",
-        "message": "Strategy fetched successfully.",
-        "data": {"strategy": strategies},
-    }
+    strategies: List[Strategy] = await get_strategies_by_token(user_info, db)
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "status": "success",
+            "message": "Fetches all strategies successfully.",
+            "data": {
+                "strategies": jsonable_encoder(strategies)
+            }
+        }
+    )
 
 
 @router.post("/create")
 async def create(
     request: StrategyCreationSchema,
-    current_user: Dict[str, Any] = Depends(destruct_token),
+    user_info: TokenBase = Depends(destruct_token),
     db: AsyncSession = Depends(get_db_session),
-):
-    """
-    API endpoint: create a new strategy for a given user by access token.
+    status_code: int = status.HTTP_200_OK
+) -> JSONResponse:
+    """Creates a new strategy for a user.
 
-    @param request:
-    @param current_user:
-    @param db:
-    @return:
+    Args:
+        request: The strategy creation schema.
+        user_info: The decoded access token as the TokenBase object.
+        db: The database session object, which will be populated by the dependency injection
+            method `get_db_session` automatically.
+        status_code: The default status_code to be returned when the request is successful.
+
+    Returns:
+        JSONResponse of strategy object just created.
     """
+    usr: User = await get_user_by_token(user_info=user_info, db=db)
     strategy = await create_strategy(
-        user_id=current_user.get("id"),
+        user_id=usr.id,
         submission=request,
         db=db,
     )
-    return {
-        "status": "success",
-        "message": "Strategy created successfully.",
-        "data": {"strategy": strategy},
-    }
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "status": "success",
+            "message": "Strategy created.",
+            "data": {
+                "strategy": jsonable_encoder(strategy)
+            }
+        }
+    )
 
 
 @router.put("/deactivate/{strategy_id}")
 async def deactivate(
     strategy_id: int,
-    current_user: Dict[str, Any] = Depends(destruct_token),
+    user_info: TokenBase = Depends(destruct_token),
     db: AsyncSession = Depends(get_db_session),
-):
-    """
-    API endpoint: deactivate a strategy for a given user by access token.
+    status_code: int = status.HTTP_200_OK
+) -> JSONResponse:
+    """Deactivates a strategy by its ID.
 
-    @param strategy_id:
-    @param current_user:
-    @param db:
-    @return:
+    Args:
+        strategy_id: The ID of the strategy of which to be disabled.
+        user_info: The decoded access token as the TokenBase object.
+        db: The database session object, which will be populated by the dependency injection
+            method `get_db_session` automatically.
+        status_code: The default status_code to be returned when the request is successful.
+
+    Returns:
+        JSONResponse of strategy object that's just disabled.
     """
-    return await deactivate_strategy(current_user, strategy_id, db)
+    usr: User = await get_user_by_token(user_info=user_info, db=db)
+    strategy = await deactivate_strategy(usr.id, strategy_id, db)
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "status": "success",
+            "message": f"Successfully disabling strategy with ID: {strategy.id}",
+            "data": {
+                "strategy": strategy
+            }
+        }
+    )

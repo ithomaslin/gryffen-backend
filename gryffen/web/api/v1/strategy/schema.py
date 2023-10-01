@@ -23,11 +23,27 @@ Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
 Date: 22/04/2023
 """
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
 
 
 class StrategyCreationSchema(BaseModel):
+
+    """
+    Schema for creating a strategy.
+
+    Attributes:
+        symbol (str): The symbol of the strategy associated to.
+        strategy_type (int): The type of the strategy.
+        grid_type (int): The type of the grid.
+        upper_bound (float): The upper bound of the grid.
+        lower_bound (float): The lower bound of the grid.
+        grid_size (int): The size of the grid.
+        principal_balance (float): The principal balance of the strategy.
+        max_drawdown (float): The max drawdown of the strategy.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
 
     symbol: str
     strategy_type: int
@@ -37,6 +53,3 @@ class StrategyCreationSchema(BaseModel):
     grid_size: int
     principal_balance: float
     max_drawdown: Optional[float] = None
-
-    class Config:
-        from_attributes = True

@@ -1,4 +1,3 @@
-# -*- encoding: utf-8 -*-
 # Copyright (c) 2023, Neat Digital
 # All rights reserved.
 #
@@ -24,7 +23,7 @@ Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
 Date: 22/04/2023
 """
 
-from typing import Dict
+from typing import List
 from fastapi import HTTPException
 from datetime import datetime
 from sqlalchemy import select, update
@@ -38,6 +37,7 @@ from gryffen.core.strategies.grid import GridStrategy
 from gryffen.core.strategies.martingale import MartingaleStrategy
 from gryffen.web.api.v1.strategy.schema import StrategyCreationSchema
 from gryffen.logging import logger
+from gryffen.security import TokenBase
 from gryffen.web.lifetime import global_listener
 
 
@@ -45,14 +45,16 @@ async def create_strategy(
     user_id: User.id,
     submission: StrategyCreationSchema,
     db: AsyncSession,
-):
-    """
-    Writes strategy object into the DB.
+) -> Strategy:
+    """Creates a new strategy.
 
-    @param user_id: of who owns the strategy
-    @param submission: user submission data
-    @param db: DB async session
-    @return:
+    Args:
+        user_id: The owner ID whom the strategy belongs to.
+        submission: The Strategy creation schema.
+        db: The database session object.
+
+    Returns:
+        The strategy onject.
     """
     if submission.strategy_type == StrategyType.GRID.value:
         logger.info("Initializing grid strategy.")
@@ -99,22 +101,24 @@ async def create_strategy(
 
 
 async def get_strategies_by_token(
-    current_user: Dict,
+    user_info: TokenBase,
     db: AsyncSession,
     is_active: bool = True,
-):
-    """
-    Fetch strategies of a user by access token.
+) -> List[Strategy]:
+    """Gets all strategies by access token.
 
-    @param current_user:
-    @param db:
-    @param is_active:
-    @return:
+    Args:
+        user_info: The TokenBase object which contains user info.
+        db: The database session object.
+        is_active: Whether to fetch only the strategies that are active or not
+
+    Returns:
+        List of strategy objects.
     """
     stmt = (
         select(User)
         .where(
-            User.username == current_user.get("username")
+            User.public_id == user_info.public_id
             and User.strategies.any(Strategy.is_active == is_active),
         )
         .options(
@@ -126,26 +130,23 @@ async def get_strategies_by_token(
 
 
 async def get_strategy_by_id(
-    current_user: Dict,
     strategy_id: Strategy.id,
     db: AsyncSession
-):
-    """
-    Fetch a strategy by ID.
+) -> Strategy:
+    """Gets strategy by its ID.
 
-    @param current_user:
-    @param strategy_id:
-    @param db:
-    @return:
+    Args:
+        strategy_id: The ID of the strategy of which to be fetched.
+        db: The database session object.
+
+    Returns:
+        The strategy object.
     """
+
     stmt = (
         select(Strategy)
-        .where(
-            Strategy.owner_id == current_user.get("id"),
-            Strategy.id == strategy_id
-        )
+        .where(Strategy.id == strategy_id)
     )
-    print(stmt)
     strategy_obj: Strategy = await db.scalar(stmt)
     if not strategy_obj:
         raise HTTPException(status_code=404, detail="Strategy not found.")
@@ -153,36 +154,31 @@ async def get_strategy_by_id(
 
 
 async def deactivate_strategy(
-    current_user: Dict,
+    user_id: User.id,
     strategy_id: Strategy.id,
     db: AsyncSession,
-):
-    """
-    Deactivate a strategy.
+) -> Strategy:
+    """Deactivates a strategy.
 
-    @param current_user:
-    @param strategy_id:
-    @param db:
-    @return:
+    Args:
+        user_id: The owner ID.
+        strategy_id: The ID of the strategy.
+        db: The database session object.
+
+    Returns:
+        The Strategy object.
     """
     stmt = (
         update(Strategy)
-        .where(Strategy.id == strategy_id)
+        .where(Strategy.id == strategy_id and Strategy.owner_id == user_id)
         .values(is_active=False)
     )
     await db.execute(stmt)
     await db.commit()
 
-    strategy = await get_strategy_by_id(
-        current_user, strategy_id, db
-    )
+    strategy = await get_strategy_by_id(strategy_id, db)
+
     # Unsubscribe the symbol of the strategy to global listener.
     await global_listener.unsubscribe(strategy.symbol)
 
-    return {
-        "status": "success",
-        "message": "Strategy deactivated.",
-        "data": {
-            "strategy": strategy,
-        }
-    }
+    return strategy

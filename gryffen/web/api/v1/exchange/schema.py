@@ -23,14 +23,21 @@ Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
 Date: 22/04/2023
 """
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class ExchangeCreationSchema(BaseModel):
 
+    """Schema for creating exchange.
+
+    Attributes:
+        name (str): Exchange name.
+        type (str): Exchange type.
+        account_id (str): Account id of the exchange.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
     name: str
     type: str
     account_id: str
-
-    class Config:
-        from_attributes = True
