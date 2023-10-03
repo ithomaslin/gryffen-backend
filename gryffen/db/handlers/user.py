@@ -1,8 +1,8 @@
-# Copyright (c) 2023, Neat Digital
+# Copyright (c) 2023, TradingLab
 # All rights reserved.
 #
-# This file is part of Gryffen.
-# See https://neat.tw for further info.
+# This file is part of TradingLab.app
+# See https://tradinglab.app for further info.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,29 +16,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-This script is used to create DB handler functions for user-related actions.
-
-Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
-Date: 22/04/2023
-"""
-
 import uuid
 import jwt
-from typing import Dict, Optional
-from datetime import datetime, timedelta
-from sqlalchemy import select, update
+from typing import Dict
+from typing import Optional
+from datetime import datetime
+from datetime import timedelta
+from fastapi import Depends
+from fastapi import HTTPException
+from fastapi import security
+from fastapi import status
+from sqlalchemy import select
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import HTTPException, status, security, Depends
-
+from gryffen.core.google.storage import Storage
 from gryffen.db.models.users import User
 from gryffen.db.dependencies import get_db_session
 from gryffen.db.handlers.activation import verify_activation_code
-from gryffen.web.api.v1.user.schema import (
-    UserCreationSchema, UserAuthenticationSchema
-)
+from gryffen.web.api.v1.user.schema import UserCreationSchema
+from gryffen.web.api.v1.user.schema import UserAuthenticationSchema
 from gryffen.settings import settings
-from gryffen.security import hashing, TokenBase, verify_password
+from gryffen.security import hashing
+from gryffen.security import TokenBase
+from gryffen.security import verify_password
 from gryffen.logging import logger
 
 
@@ -61,9 +61,9 @@ async def create_user(
         User: The newly created user object.
     """
     user = User(
-        username=submission.email,
-        password=hashing(submission.password),
         email=submission.email,
+        password=hashing(submission.password),
+        username=submission.email,
         public_id=str(uuid.uuid4()),
         register_via=submission.register_via,
         external_uid=hashing(submission.external_uid),
@@ -73,6 +73,8 @@ async def create_user(
     db.add(user)
     await db.commit()
     await db.refresh(user)
+
+    Storage(bucket_name=submission.email)   # self initializing the bucket and its creation
 
     logger.info(f"[{datetime.utcnow()}] User {user.username} created successfully.")
     return user
@@ -326,7 +328,7 @@ async def create_new_api_key(
             update(User)
             .where(User.id == current_user.id)
             .values(
-                access_token=api_key,
+                api_key=api_key,
                 timestamp_updated=datetime.utcnow(),
             )
         )

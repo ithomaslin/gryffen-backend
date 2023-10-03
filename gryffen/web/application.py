@@ -1,8 +1,8 @@
-# Copyright (c) 2023, Neat Digital
+# Copyright (c) 2023, TradingLab
 # All rights reserved.
 #
-# This file is part of Gryffen.
-# See https://neat.tw for further info.
+# This file is part of TradingLab.app
+# See https://tradinglab.app for further info.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,24 +16,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Gryffen web API main entry point.
-
-Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
-Date: 22/04/2023
-"""
-
 from importlib import metadata
 from pathlib import Path
 from fastapi import FastAPI
 from fastapi.responses import UJSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.gzip import GZipMiddleware
-
 from gryffen.logging import configure_logging
 from gryffen.web.api.router import router
 from gryffen.web.router import root_router
-from gryffen.web.lifetime import register_shutdown_event, register_startup_event
+from gryffen.web.lifetime import register_shutdown_event
+from gryffen.web.lifetime import register_startup_event
 
 APP_ROOT = Path(__file__).parent.parent
 

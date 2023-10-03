@@ -1,8 +1,8 @@
-# Copyright (c) 2023, Neat Digital
+# Copyright (c) 2023, TradingLab
 # All rights reserved.
 #
-# This file is part of Gryffen.
-# See https://neat.tw for further info.
+# This file is part of TradingLab.app
+# See https://tradinglab.app for further info.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,17 +16,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-This script is used to define user data object schema.
-
-Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
-Date: 22/04/2023
-"""
-
 from typing import List
-
-from pydantic import BaseModel, EmailStr, ConfigDict
-
+from pydantic import BaseModel
+from pydantic import EmailStr
+from pydantic import ConfigDict
 from gryffen.web.api.utils import is_valid_email
 
 

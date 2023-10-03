@@ -1,8 +1,8 @@
-# Copyright (c) 2023, Neat Digital
+# Copyright (c) 2023, TradingLab
 # All rights reserved.
 #
-# This file is part of Gryffen.
-# See https://neat.tw for further info.
+# This file is part of TradingLab.app
+# See https://tradinglab.app for further info.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,22 +24,25 @@ Date: 22/04/2023
 """
 
 from typing import List
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter
+from fastapi import Depends
+from fastapi import status
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gryffen.db.dependencies import get_db_session
-from gryffen.security import TokenBase, destruct_token
+from gryffen.db.handlers.exchange import create_exchange
+from gryffen.db.handlers.exchange import get_exchanges_by_token
+from gryffen.db.handlers.user import get_user_by_token
 from gryffen.db.models.exchanges import Exchange
 from gryffen.db.models.users import User
-from gryffen.db.handlers.user import get_user_by_token
-from gryffen.db.handlers.exchange import (
-    create_exchange, get_exchanges_by_token
-)
+from gryffen.security import destruct_token
+from gryffen.security import TokenBase
 from gryffen.web.api.v1.exchange.schema import ExchangeCreationSchema
 
 
+# Setting the API router prefix to `/exchange`
 router = APIRouter(prefix="/exchange")
 
 

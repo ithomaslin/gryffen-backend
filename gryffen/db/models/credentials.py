@@ -1,9 +1,8 @@
-# -*- encoding: utf-8 -*-
-# Copyright (c) 2023, Neat Digital
+# Copyright (c) 2023, TradingLab
 # All rights reserved.
 #
-# This file is part of Gryffen.
-# See https://neat.tw for further info.
+# This file is part of TradingLab.app
+# See https://tradinglab.app for further info.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,9 +17,14 @@
 # limitations under the License.
 
 from datetime import datetime
-
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import Boolean
+from sqlalchemy import DateTime
+from sqlalchemy import ForeignKey
+from sqlalchemy import Integer
+from sqlalchemy import String
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import relationship
 
 from gryffen.db.base import Base
 

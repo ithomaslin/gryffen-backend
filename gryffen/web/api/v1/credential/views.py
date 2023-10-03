@@ -1,8 +1,8 @@
-# Copyright (c) 2023, Neat Digital
+# Copyright (c) 2023, TradingLab
 # All rights reserved.
 #
-# This file is part of Gryffen.
-# See https://neat.tw for further info.
+# This file is part of TradingLab.app
+# See https://tradinglab.app for further info.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,21 +23,22 @@ Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
 Date: 22/04/2023
 """
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter
+from fastapi import Depends
+from fastapi import status
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
-from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from typing import List
 from gryffen.db.dependencies import get_db_session
 from gryffen.db.models.users import User
 from gryffen.db.models.credentials import Credential
-from gryffen.security import TokenBase, destruct_token
 from gryffen.db.handlers.user import get_user_by_token
+from gryffen.db.handlers.credential import create_credential
+from gryffen.db.handlers.credential import get_credentials_by_token
+from gryffen.security import destruct_token
+from gryffen.security import TokenBase
 from gryffen.web.api.v1.credential.schema import CredentialCreationSchema
-from gryffen.db.handlers.credential import (
-    create_credential, get_credentials_by_token
-)
 
 
 router = APIRouter(prefix="/credential")

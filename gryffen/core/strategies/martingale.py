@@ -1,9 +1,8 @@
-# -*- encoding: utf-8 -*-
-# Copyright (c) 2023, Neat Digital
+# Copyright (c) 2023, TradingLab
 # All rights reserved.
 #
-# This file is part of Gryffen.
-# See https://neat.tw for further info.
+# This file is part of TradingLab.app
+# See https://tradinglab.app for further info.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,7 +22,7 @@ from gryffen.core.strategies.grid import GridStrategy
 class MartingaleStrategy(GridStrategy):
 
     def __init__(self, *args, **kwargs):
-        super(MartingaleStrategy, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def __str__(self):
         return "MartingaleStrategy"

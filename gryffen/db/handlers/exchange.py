@@ -1,8 +1,8 @@
-# Copyright (c) 2023, Neat Digital
+# Copyright (c) 2023, TradingLab
 # All rights reserved.
 #
-# This file is part of Gryffen.
-# See https://neat.tw for further info.
+# This file is part of TradingLab.app
+# See https://tradinglab.app for further info.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,16 +16,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Exchange handlers."""
-
 from typing import List
 from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from gryffen.db.models.users import User
 from gryffen.db.models.exchanges import Exchange
+from gryffen.db.models.users import User
 from gryffen.security import TokenBase
 from gryffen.web.api.v1.exchange.schema import ExchangeCreationSchema
 

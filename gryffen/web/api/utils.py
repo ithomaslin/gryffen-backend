@@ -1,17 +1,34 @@
+# Copyright (c) 2023, TradingLab
+# All rights reserved.
+#
+# This file is part of TradingLab.app
+# See https://tradinglab.app for further info.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import re
 import os
 import json
 import base64
-from email.message import EmailMessage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from dotenv import load_dotenv
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-from functools import wraps
-from fastapi import Request, HTTPException, status
-
+from fastapi import Request
+from fastapi import HTTPException
+from fastapi import status
 from gryffen.settings import Settings
 
 
@@ -52,7 +69,7 @@ class GriffinMailService:
     def __init__(self):
         service_account_json_string = os.getenv("SERVICE_ACCOUNT_JSON")
         api_scope = ['https://mail.google.com']
-        from_email = 'griffin@neat.tw'
+        from_email = "service@tradinglab.app"
         credentials = service_account.Credentials.from_service_account_info(
             info=json.loads(service_account_json_string),
             scopes=api_scope

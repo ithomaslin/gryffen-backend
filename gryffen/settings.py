@@ -1,8 +1,8 @@
-# Copyright (c) 2023, Neat Digital
+# Copyright (c) 2023, TradingLab
 # All rights reserved.
 #
-# This file is part of Gryffen.
-# See https://neat.tw for further info.
+# This file is part of TradingLab.app
+# See https://tradinglab.app for further info.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,12 +25,12 @@ Date: 22/04/2023
 
 import enum
 import os
+from dotenv import load_dotenv
 from pathlib import Path
 from tempfile import gettempdir
-
-from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
 from yarl import URL
+
 
 TEMP_DIR = Path(gettempdir())
 load_dotenv()

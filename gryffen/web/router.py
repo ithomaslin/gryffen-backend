@@ -1,9 +1,8 @@
-# -*- encoding: utf-8 -*-
-# Copyright (c) 2023, Neat Digital
+# Copyright (c) 2023, TradingLab
 # All rights reserved.
 #
-# This file is part of Gryffen.
-# See https://neat.tw for further info.
+# This file is part of TradingLab.app
+# See https://tradinglab.app for further info.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,17 +16,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-This script is used to create the base router for the API.
-
-Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
-Date: 19/09/2023
-"""
-
 from fastapi import Request
 from fastapi.routing import APIRouter
-
 from .lifetime import template
+
 
 root_router = APIRouter()
 

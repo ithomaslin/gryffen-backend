@@ -1,8 +1,8 @@
-# Copyright (c) 2023, Neat Digital
+# Copyright (c) 2023, TradingLab
 # All rights reserved.
 #
-# This file is part of Gryffen.
-# See https://neat.tw for further info.
+# This file is part of TradingLab.app
+# See https://tradinglab.app for further info.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,24 +16,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Web API lifetime functions.
-
-Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
-Date: 22/04/2023
-"""
-
-from typing import Awaitable, Callable
-from fastapi import FastAPI, Request
-from typing import Any
+from typing import Awaitable
+from typing import Callable
+from fastapi import FastAPI
 from pathlib import Path
 from starlette.datastructures import URL
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine
 from fastapi.templating import Jinja2Templates
-
 from gryffen.settings import settings
 from gryffen.core.websocket.streamer import Listener
+
 
 global_listener = Listener()
 BASE_DIR = Path(__file__).resolve().parent

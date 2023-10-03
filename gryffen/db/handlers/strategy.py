@@ -1,8 +1,8 @@
-# Copyright (c) 2023, Neat Digital
+# Copyright (c) 2023, TradingLab
 # All rights reserved.
 #
-# This file is part of Gryffen.
-# See https://neat.tw for further info.
+# This file is part of TradingLab.app
+# See https://tradinglab.app for further info.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,27 +16,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-This script is used to create DB handler functions for strategy-related actions.
-
-Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
-Date: 22/04/2023
-"""
-
 from typing import List
 from fastapi import HTTPException
+from fastapi import status
 from datetime import datetime
 from sqlalchemy import select, update
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from gryffen.db.models.users import User
 from gryffen.db.models.strategies import Strategy
-from gryffen.core.strategies.enum import StrategyType
-from gryffen.core.strategies.grid import GridStrategy
-from gryffen.core.strategies.martingale import MartingaleStrategy
 from gryffen.web.api.v1.strategy.schema import StrategyCreationSchema
-from gryffen.logging import logger
 from gryffen.security import TokenBase
 from gryffen.web.lifetime import global_listener
 
@@ -54,40 +43,18 @@ async def create_strategy(
         db: The database session object.
 
     Returns:
-        The strategy onject.
+        The strategy object.
     """
-    if submission.strategy_type == StrategyType.GRID.value:
-        logger.info("Initializing grid strategy.")
-        _strategy = GridStrategy(
-            symbol=submission.symbol, upper_bound=submission.upper_bound,
-            lower_bound=submission.lower_bound, grid_size=submission.grid_size,
-            grid_type=submission.grid_type, max_drawdown=submission.max_drawdown,
-            owner_id=user_id, principal_balance=submission.principal_balance
-        )
-        # Subscribe the symbol of the strategy to global listener.
-        await global_listener.subscribe(grid_strategy=_strategy)
-    else:
-        logger.info("Initializing martingale strategy.")
-        _strategy = MartingaleStrategy(
-            symbol=submission.symbol, upper_bound=submission.upper_bound,
-            lower_bound=submission.lower_bound, grid_size=submission.grid_size,
-            grid_type=submission.grid_type, max_drawdown=submission.max_drawdown,
-            owner_id=user_id, principal_balance=submission.principal_balance
-        )
-        # Subscribe the symbol of the strategy to global listener.
-        await global_listener.subscribe(martingale_strategy=_strategy)
 
     strategy = Strategy(
-        strategy_type=submission.strategy_type,
-        grid_type=submission.grid_type,
+        name=submission.name,
+        description=submission.description,
         symbol=submission.symbol,
-        upper_bound=submission.upper_bound,
-        lower_bound=submission.lower_bound,
-        grid_size=submission.grid_size,
-        grids=str(_strategy.grids),
+        risk_level=submission.risk_level,
+        risk_tolerance=submission.risk_tolerance,
         principal_balance=submission.principal_balance,
         max_drawdown=submission.max_drawdown,
-        is_active=True,
+        is_active=submission.is_active,
         timestamp_created=datetime.utcnow(),
         timestamp_updated=datetime.utcnow(),
         owner_id=user_id,
@@ -96,6 +63,8 @@ async def create_strategy(
     db.add(strategy)
     await db.commit()
     await db.refresh(strategy)
+
+    await global_listener.subscribe(strategy=strategy)
 
     return strategy
 
@@ -151,6 +120,48 @@ async def get_strategy_by_id(
     if not strategy_obj:
         raise HTTPException(status_code=404, detail="Strategy not found.")
     return strategy_obj
+
+
+async def update_strategy(
+    user_id: User.id,
+    strategy_id: Strategy.id,
+    submission: StrategyCreationSchema,
+    db: AsyncSession
+) -> Strategy:
+    """Updates a strategy.
+
+    Args:
+        user_id: The owner ID whom the strategy belongs to.
+        strategy_id: The ID of the strategy to be updated.
+        submission: The Strategy creation schema.
+        db: The database session object.
+
+    Returns:
+        The strategy object.
+    """
+
+    strategy = await get_strategy_by_id(strategy_id, db)
+
+    if strategy.owner_id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to update this strategy."
+        )
+
+    strategy.name = submission.name
+    strategy.description = submission.description
+    strategy.symbol = submission.symbol
+    strategy.risk_level = submission.risk_level
+    strategy.risk_tolerance = submission.risk_tolerance
+    strategy.principal_balance = submission.principal_balance
+    strategy.max_drawdown = submission.max_drawdown
+    strategy.is_active = submission.is_active
+    strategy.timestamp_updated = datetime.utcnow()
+
+    await db.commit()
+    await db.refresh(strategy)
+
+    return strategy
 
 
 async def deactivate_strategy(

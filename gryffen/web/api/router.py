@@ -1,9 +1,8 @@
-# -*- encoding: utf-8 -*-
-# Copyright (c) 2023, Neat Digital
+# Copyright (c) 2023, TradingLab
 # All rights reserved.
 #
-# This file is part of Gryffen.
-# See https://neat.tw for further info.
+# This file is part of TradingLab.app
+# See https://tradinglab.app for further info.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,24 +16,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-This script is used as the root router of the Gryffen API.
-
-Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
-Date: 22/04/2023
-"""
-
 from fastapi.routing import APIRouter
+from gryffen.web.api.v1 import user
+from gryffen.web.api.v1 import strategy
+from gryffen.web.api.v1 import exchange
+from gryffen.web.api.v1 import credential
 
-from gryffen.web.api.v1 import (
-    user,
-    strategy,
-    exchange,
-    credential
-)
 
 router = APIRouter()
-
 router.include_router(user.router, prefix="/v1", tags=["user"])
 router.include_router(strategy.router, prefix="/v1", tags=["strategy"])
 router.include_router(exchange.router, prefix="/v1", tags=["exchange"])

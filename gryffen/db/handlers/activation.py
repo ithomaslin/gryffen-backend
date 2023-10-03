@@ -1,8 +1,8 @@
-# Copyright (c) 2023, Neat Digital
+# Copyright (c) 2023, TradingLab
 # All rights reserved.
 #
-# This file is part of Gryffen.
-# See https://neat.tw for further info.
+# This file is part of TradingLab.app
+# See https://tradinglab.app for further info.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,18 +16,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-This script is used to create DB handler functions for activation_code-related actions.
-
-Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
-Date: 22/04/2023
-"""
-
 from datetime import datetime
-from sqlalchemy import select, update
+from fastapi import HTTPException
+from fastapi import status
+from sqlalchemy import select
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import HTTPException, status
-
 from gryffen.db.models.users import User
 from gryffen.db.models.activations import Activation
 from gryffen.security import TokenBase

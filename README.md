@@ -1,24 +1,19 @@
-# gryffen
+# TradingLab.app (gryffen)
 
-This project was generated using fastapi_template.
+This repo consists of the back-end structure of TradingLab.
 
 ## Poetry
 
-This project uses poetry. It's a modern dependency management
-tool.
-
-To run the project use this set of commands:
+This project uses `poetry`, which is a modern dependency management tool.\
+To run the project in your local environment, use this set of commands as follows:
 
 ```bash
 poetry install
 poetry run python -m gryffen
 ```
 
-This will start the server on the configured host.
-
-You can find swagger documentation at `/api/docs`.
-
-You can read more about poetry here: https://python-poetry.org/
+This will start the server on the configured host. You can find swagger documentation at `/api/docs`.\
+To learn more about `poetry` please read here: https://python-poetry.org/
 
 ## Docker
 

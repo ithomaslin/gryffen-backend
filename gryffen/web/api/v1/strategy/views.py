@@ -1,8 +1,8 @@
-# Copyright (c) 2023, Neat Digital
+# Copyright (c) 2023, TradingLab
 # All rights reserved.
 #
-# This file is part of Gryffen.
-# See https://neat.tw for further info.
+# This file is part of TradingLab.app
+# See https://tradinglab.app for further info.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,23 +23,24 @@ Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
 Date: 22/04/2023
 """
 
-from typing import Dict, Any, List
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter
+from fastapi import Depends
+from fastapi import status
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from typing import List
 from gryffen.db.dependencies import get_db_session
 from gryffen.db.models.users import User
 from gryffen.db.models.strategies import Strategy
 from gryffen.db.handlers.user import get_user_by_token
-from gryffen.db.handlers.strategy import (
-    get_strategies_by_token,
-    create_strategy,
-    deactivate_strategy,
-)
+from gryffen.db.handlers.strategy import get_strategies_by_token
+from gryffen.db.handlers.strategy import create_strategy
+from gryffen.db.handlers.strategy import deactivate_strategy
 from gryffen.web.api.v1.strategy.schema import StrategyCreationSchema
-from gryffen.security import TokenBase, destruct_token
+from gryffen.security import destruct_token
+from gryffen.security import TokenBase
+
 
 router = APIRouter(prefix="/strategy")
 

@@ -1,8 +1,8 @@
-# Copyright (c) 2023, Neat Digital
+# Copyright (c) 2023, TradingLab
 # All rights reserved.
 #
-# This file is part of Gryffen.
-# See https://neat.tw for further info.
+# This file is part of TradingLab.app
+# See https://tradinglab.app for further info.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,36 +23,36 @@ Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
 Date: 22/04/2023
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Form, status, security
+from fastapi import APIRouter
+from fastapi import Depends
+from fastapi import Form
+from fastapi import HTTPException
+from fastapi import status
+from fastapi import security
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from gryffen.security import TokenBase, destruct_token
 from gryffen.db.dependencies import get_db_session
-from gryffen.web.api.utils import GriffinMailService, private_method
+from gryffen.db.handlers.activation import create_activation_code
+from gryffen.db.handlers.activation import reissue_activation_code
+from gryffen.db.handlers.user import authenticate_user
+from gryffen.db.handlers.user import activate_user
+from gryffen.db.handlers.user import check_user_exist
+from gryffen.db.handlers.user import create_user
+from gryffen.db.handlers.user import get_user_by_token
+from gryffen.db.handlers.user import promote_user
+from gryffen.db.handlers.user import create_new_api_key
+from gryffen.db.handlers.user import social_authenticate_user
+from gryffen.db.handlers.user import oauth_get_current_user
+from gryffen.db.handlers.user import oauth_create_token
+from gryffen.db.handlers.user import oauth_refresh_token
 from gryffen.db.models.users import User
-from gryffen.web.api.v1.user.schema import (
-    UserCreationSchema,
-    UserAuthenticationSchema
-)
-from gryffen.db.handlers.activation import (
-    create_activation_code,
-    reissue_activation_code,
-)
-from gryffen.db.handlers.user import (
-    authenticate_user,
-    activate_user,
-    check_user_exist,
-    create_user,
-    get_user_by_token,
-    promote_user,
-    create_new_api_key,
-    social_authenticate_user,
-    oauth_get_current_user,
-    oauth_create_token,
-    oauth_refresh_token,
-)
+from gryffen.web.api.v1.user.schema import UserCreationSchema
+from gryffen.web.api.v1.user.schema import UserAuthenticationSchema
+from gryffen.web.api.utils import GriffinMailService
+from gryffen.web.api.utils import private_method
+from gryffen.security import destruct_token
+from gryffen.security import TokenBase
 
 
 router = APIRouter(prefix="/user")
@@ -60,7 +60,7 @@ router = APIRouter(prefix="/user")
 
 @private_method
 @router.post("/create", include_in_schema=False)
-async def create_user(
+async def create_user_via_json(
     request: UserCreationSchema,
     db: AsyncSession = Depends(get_db_session),
     status_code: int = status.HTTP_201_CREATED,

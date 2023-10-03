@@ -1,8 +1,8 @@
-# Copyright (c) 2023, Neat Digital
+# Copyright (c) 2023, TradingLab
 # All rights reserved.
 #
-# This file is part of Gryffen.
-# See https://neat.tw for further info.
+# This file is part of TradingLab.app
+# See https://tradinglab.app for further info.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,14 +16,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-This script is used to define strategy data object schema.
-
-Author: Thomas Lin (ithomaslin@gmail.com | thomas@neat.tw)
-Date: 22/04/2023
-"""
-
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
+from pydantic import ConfigDict
 from typing import Optional
 
 
@@ -33,23 +27,25 @@ class StrategyCreationSchema(BaseModel):
     Schema for creating a strategy.
 
     Attributes:
-        symbol (str): The symbol of the strategy associated to.
+        name (str): The name of the strategy.
+        description (str): The description of the strategy.
+        symbol (str): The symbol of the strategy.
+        risk_level (int): The risk level of the strategy.
+        risk_tolerance (int): The risk tolerance of the strategy.
         strategy_type (int): The type of the strategy.
-        grid_type (int): The type of the grid.
-        upper_bound (float): The upper bound of the grid.
-        lower_bound (float): The lower bound of the grid.
-        grid_size (int): The size of the grid.
         principal_balance (float): The principal balance of the strategy.
-        max_drawdown (float): The max drawdown of the strategy.
+        max_drawdown (float): The maximum drawdown of the strategy.
+        is_active (bool): Whether the strategy is active.
     """
 
     model_config = ConfigDict(from_attributes=True)
 
+    name: str
+    description: str
     symbol: str
+    risk_level: int
+    risk_tolerance: int
     strategy_type: int
-    grid_type: int
-    upper_bound: float
-    lower_bound: float
-    grid_size: int
     principal_balance: float
     max_drawdown: Optional[float] = None
+    is_active: bool

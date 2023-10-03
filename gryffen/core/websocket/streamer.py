@@ -1,9 +1,8 @@
-# -*- encoding: utf-8 -*-
-# Copyright (c) 2023, Neat Digital
+# Copyright (c) 2023, TradingLab
 # All rights reserved.
 #
-# This file is part of Gryffen.
-# See https://neat.tw for further info.
+# This file is part of TradingLab.app
+# See https://tradinglab.app for further info.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,19 +20,29 @@ import json
 import asyncio
 import websockets
 from asyncio import Task
-from fastapi import HTTPException, status
-from typing import List, Any, Dict, Optional, Set
-from sqlalchemy import select, ScalarResult
-from sqlalchemy.ext.asyncio import (
-    AsyncSession, AsyncEngine, create_async_engine
-)
-
+from fastapi import HTTPException
+from fastapi import status
+from pydantic import BaseModel
+from typing import List
+from typing import Any
+from typing import Dict
+from typing import Set
+from sqlalchemy import select
+from sqlalchemy import ScalarResult
+from sqlalchemy.exc import OperationalError
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncEngine
+from sqlalchemy.ext.asyncio import create_async_engine
 from gryffen.settings import settings
 from gryffen.core.websocket.schema import FinnhubWS
 from gryffen.db.models.strategies import Strategy
-from gryffen.core.strategies import GridStrategy, MartingaleStrategy
-from gryffen.core.strategies.enum import StrategyType
 from gryffen.logging import logger
+
+
+# class Strategy(BaseModel):
+#
+#     owner_id: int
+#     symbol: str
 
 
 class Listener:
@@ -41,12 +50,12 @@ class Listener:
     def __init__(self):
         """This is the constructor for the Listener class."""
         self.subscribers: Set[str] = set()
-        self.strategy_pool: Dict[str, List[Dict[str, Any]]] = {}
+        self.strategy_pool: Dict[str, List[Strategy]] = {}
         self.strategies: ScalarResult or None = None
-        self.listener_task: Task or None = None
-        self.engine: AsyncEngine or None = None
-        self.session: AsyncSession or None = None
-        self.socket: websockets.WebSocketClientProtocol or None = None
+        self.listener_task: Task | None = None
+        self.engine: AsyncEngine | None = None
+        self.session: AsyncSession | None = None
+        self.socket: websockets.WebSocketClientProtocol | None = None
 
     async def init(self) -> None:
         """
@@ -64,85 +73,50 @@ class Listener:
         if self.strategies:
             # Subscribing to all strategies
             for strategy in self.strategies.fetchall():
-                if strategy.strategy_type == StrategyType.GRID:
-                    _strategy = GridStrategy(
-                        symbol=strategy.symbol,
-                        upper_bound=strategy.upper_bound,
-                        lower_bound=strategy.lower_bound,
-                        grid_size=strategy.grid_size,
-                        grid_type=strategy.grid_type,
-                        max_drawdown=strategy.max_drawdown,
-                        owner_id=strategy.owner_id,
-                        principal_balance=strategy.principal_balance
-                    )
-                    await self.subscribe(grid_strategy=_strategy)
-                else:
-                    _strategy = MartingaleStrategy(
-                        symbol=strategy.symbol,
-                        upper_bound=strategy.upper_bound,
-                        lower_bound=strategy.lower_bound,
-                        grid_size=strategy.grid_size,
-                        grid_type=strategy.grid_type,
-                        max_drawdown=strategy.max_drawdown,
-                        owner_id=strategy.owner_id,
-                        principal_balance=strategy.principal_balance
-                    )
-                    await self.subscribe(martingale_strategy=_strategy)
+                await self.subscribe(strategy=strategy)
         else:
             # This section is intentionally left blank
             pass
 
-    async def subscribe(
-        self,
-        grid_strategy: Optional[GridStrategy] = None,
-        martingale_strategy: Optional[MartingaleStrategy] = None
-    ) -> None:
-        """
-        Adds trading symbols to websocket client list.
-        @param grid_strategy: Grid strategy object
-        @param martingale_strategy: Martingale strategy object
-        @return: None
-        """
-        assert grid_strategy or martingale_strategy, \
-            "At least one strategy must not be None."
+    async def subscribe(self, strategy: Strategy) -> bool:
 
-        s = grid_strategy if grid_strategy else martingale_strategy
-        for item in self.strategy_pool.get(s.symbol, []):
-            if item.get("owner_id") == s.owner_id:
-                raise HTTPException(
-                    status_code=status.HTTP_406_NOT_ACCEPTABLE,
-                    detail=f"Strategy for symbol {s.symbol} already exists."
-                )
+        # First check if the strategy is already subscribed,
+        # if yes then return False
+        for strategy_pool_item in self.strategy_pool.get(strategy.symbol, []):
+            if strategy_pool_item.id == strategy.id:
+                return False
 
-        strategy_obj = {
-            "owner_id": s.owner_id,
-            "symbol": s.symbol,
-            "timestamp_created": s.created,
-            "strategy": s
-        }
-        self.strategy_pool.setdefault(s.symbol, []).append(strategy_obj)
+        self.strategy_pool.setdefault(strategy.symbol, []).append(strategy)
 
-        # Adding trading symbol to the subscriber list
-        # and sorting the list by symbol for faster lookup
+        # Adds the trading symbol to the subscriber list and sorts the list by
+        # symbol alphabetically for faster lookup; the `self.subscribers` is a
+        # set data type to prevent duplicates.
         self.subscribers.add(
-            json.dumps({"type": "subscribe", "symbol": s.symbol})
+            json.dumps({
+                "type": "subscribe",
+                "symbol": strategy.symbol
+            })
         )
         self.subscribers = sorted(self.subscribers, key=lambda x: x["symbol"])
+        return True
 
     async def unsubscribe(self, strategy: Strategy) -> None:
-        """
-        Removes trading symbols from websocket client list.
-        @param strategy:
-        @return: None
+        """Unsubscribes the symbol from the source web socket
+
+        Args:
+            strategy:
+
+        Returns:
+
         """
         # Pops out item from the strategy pool
-        for item in self.strategy_pool.get(strategy.symbol, []):
-            if item.get("owner_id") == strategy.owner_id:
-                self.strategy_pool[strategy.symbol].remove(item)
+        for strategy_pool_item in self.strategy_pool.get(strategy.symbol, []):
+            if strategy_pool_item.id == strategy.id:
+                self.strategy_pool[strategy.symbol].remove(strategy_pool_item)
                 break
 
-        # Check if the strategy pool still has any items
-        # for the symbol
+        # If the strategy pool for the specific symbol is empty then
+        # unsubscribe the symbol
         if not self.strategy_pool.get(strategy.symbol, []):
             self.subscribers.discard(
                 json.dumps({"type": "subscribe", "symbol": strategy.symbol})
@@ -153,8 +127,7 @@ class Listener:
         await self.socket.send(q)
 
     async def start_listening(self) -> None:
-        """
-        Starts the websocket client.
+        """Starts the websocket client .
 
         This function is used to start the websocket client by
         adding the listener task to the async IO task pool.
@@ -211,9 +184,16 @@ class Listener:
         @param session: DB async session
         @return:
         """
-        stmt = (
-            select(Strategy)
-            .where(Strategy.is_active == 1)
-            .distinct(Strategy.symbol)
-        )
-        return await session.scalars(stmt)
+        try:
+            stmt = (
+                select(Strategy)
+                .where(Strategy.is_active == 1)
+                .distinct(Strategy.symbol)
+            )
+            strategies = await session.scalars(stmt)
+        except OperationalError:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Database connection error."
+            )
+        return strategies

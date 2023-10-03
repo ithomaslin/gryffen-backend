@@ -1,15 +1,15 @@
 """empty message
 
-Revision ID: 929422a2c75e
+Revision ID: 07188504a597
 Revises: 819cbf6e030b
-Create Date: 2023-09-15 13:08:58.573807
+Create Date: 2023-10-03 23:26:42.071532
 
 """
 import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "929422a2c75e"
+revision = "07188504a597"
 down_revision = "819cbf6e030b"
 branch_labels = None
 depends_on = None
@@ -28,8 +28,9 @@ def upgrade() -> None:
         sa.Column("last_name", sa.String(length=50), nullable=True),
         sa.Column("register_via", sa.String(length=50), nullable=True),
         sa.Column("external_uid", sa.LargeBinary(), nullable=True),
-        sa.Column("access_token", sa.String(length=1024), nullable=True),
+        sa.Column("api_key", sa.String(length=1024), nullable=True),
         sa.Column("is_active", sa.Boolean(), nullable=False),
+        sa.Column("tier", sa.Integer(), nullable=True),
         sa.Column("is_superuser", sa.Boolean(), nullable=False),
         sa.Column("timestamp_created", sa.DateTime(), nullable=False),
         sa.Column("timestamp_updated", sa.DateTime(), nullable=False),
@@ -74,13 +75,12 @@ def upgrade() -> None:
     op.create_table(
         "strategy",
         sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("strategy_type", sa.Integer(), nullable=False),
-        sa.Column("grid_type", sa.Integer(), nullable=False),
+        sa.Column("name", sa.String(length=100), nullable=False),
+        sa.Column("description", sa.String(length=500), nullable=True),
         sa.Column("symbol", sa.String(length=50), nullable=False),
-        sa.Column("upper_bound", sa.Numeric(precision=10, scale=4), nullable=False),
-        sa.Column("lower_bound", sa.Numeric(precision=10, scale=4), nullable=False),
-        sa.Column("grid_size", sa.Integer(), nullable=False),
-        sa.Column("grids", sa.JSON(), nullable=False),
+        sa.Column("risk_level", sa.Integer(), nullable=False),
+        sa.Column("risk_tolerance", sa.Integer(), nullable=False),
+        sa.Column("strategy_type", sa.Integer(), nullable=False),
         sa.Column(
             "principal_balance", sa.Numeric(precision=10, scale=4), nullable=False
         ),
@@ -124,11 +124,11 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("symbol", sa.String(length=50), nullable=False),
         sa.Column("is_finalized", sa.Boolean(), nullable=False),
-        sa.Column("timestamp_created", sa.DateTime(), nullable=False),
-        sa.Column("timestamp_updated", sa.DateTime(), nullable=False),
         sa.Column("entry_price", sa.Numeric(precision=10, scale=4), nullable=False),
         sa.Column("volume", sa.Numeric(precision=10, scale=4), nullable=False),
         sa.Column("realized_profit", sa.Numeric(precision=10, scale=4), nullable=False),
+        sa.Column("timestamp_created", sa.DateTime(), nullable=False),
+        sa.Column("timestamp_updated", sa.DateTime(), nullable=False),
         sa.Column("owner_id", sa.Integer(), nullable=False),
         sa.Column("strategy_id", sa.Integer(), nullable=False),
         sa.ForeignKeyConstraint(
