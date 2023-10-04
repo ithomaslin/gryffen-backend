@@ -70,17 +70,18 @@ async def create_user_via_json(
     Creates a new user and sends an activation code to the user's email.
 
     Args:
-        request: The request schema for creating a new user, request body should contain
-            the following fields:
+        request: The request schema for creating a new user, request body should
+            contain the following fields:
                 - email
                 - password
                 - register_via
                 - external_uid
                 - first_name
                 - last_name
-        db: The database session object, which will be populated by the dependency injection
-            method `get_db_session` automatically.
-        status_code: The default status_code to be returned when the request is successful.
+        db: The database session object, which will be populated by the
+            dependency injection method `get_db_session` automatically.
+        status_code: The default status_code to be returned when the request is
+            successful.
 
     Returns:
         A JSONResponse object with the following fields:
@@ -143,9 +144,10 @@ async def create_user_via_form(
         email: The email address of the user.
         password: The user defined password.
         register_via: The middleware used to register the user.
-        db: The database session object, which will be populated by the dependency injection
-            method `get_db_session` automatically.
-        status_code: The default status_code to be returned when the request is successful.
+        db: The database session object, which will be populated by the
+            dependency injection method `get_db_session` automatically.
+        status_code: The default status_code to be returned when the request is
+            successful.
 
     Returns:
         A JSONResponse object with the following fields:
@@ -201,9 +203,10 @@ async def login_for_oauth_token(
 
     Args:
         form_data: The HTML form data that contains user's email and password.
-        db: The database session object, which will be populated by the dependency injection
-            method `get_db_session` automatically.
-        status_code: The default status_code to be returned when the request is successful.
+        db: The database session object, which will be populated by the
+            dependency injection method `get_db_session` automatically.
+        status_code: The default status_code to be returned when the request is
+            successful.
 
     Returns:
         A JSONResponse object with the following fields:
@@ -259,14 +262,17 @@ async def social_login(
 ) -> JSONResponse:
     """Logs user in (via third-party OAuth)
 
-    Authenticates the user via third-party OAuth provider. It will create a new access token for the user.
-    Finally, it will return the user object and the access token object.
+    Authenticates the user via third-party OAuth provider. It will create a new
+    access token for the user. Finally, it will return the user object and the
+    access token object.
 
     Args:
-        request: The request object that contains the user's email and external UID.
-        db: The database session object, which will be populated by the dependency injection
-            method `get_db_session` automatically.
-        status_code: The default status_code to be returned when the request is successful.
+        request: The request object that contains the user's email and
+            external UID.
+        db: The database session object, which will be populated by the
+            dependency injection method `get_db_session` automatically.
+        status_code: The default status_code to be returned when the request is
+            successful.
 
     Returns:
         A JSONResponse object with the following fields:
@@ -316,9 +322,10 @@ async def oauth_refresh(
 
     Args:
         refresh_token: The refresh token.
-        db: The database session object, which will be populated by the dependency injection
-            method `get_db_session` automatically.
-        status_code: The default status_code to be returned when the request is successful.
+        db: The database session object, which will be populated by the
+            dependency injection method `get_db_session` automatically.
+        status_code: The default status_code to be returned when the request is
+            successful.
 
     Returns:
         A JSONResponse object with the following fields:
@@ -389,7 +396,8 @@ async def oauth_get_user(
 
     Args:
         usr: The user object that is retrieved from decoding the access token.
-        status_code: The default status_code to be returned when the request is successful.
+        status_code: The default status_code to be returned when the request is
+            successful.
 
     Returns:
         A JSONResponse object with the following fields:
@@ -419,13 +427,15 @@ async def reissue_activation(
 ) -> JSONResponse:
     """Reissues a new activation code
 
-    Generates a new activation code for the user and sends it to the user's email address.
+    Generates a new activation code for the user and sends it to the user's
+    email address.
 
     Args:
         email: The user's email address.
-        db: The database session object, which will be populated by the dependency injection
-            method `get_db_session` automatically.
-        status_code: The default status_code to be returned when the request is successful.
+        db: The database session object, which will be populated by the
+            dependency injection method `get_db_session` automatically.
+        status_code: The default status_code to be returned when the request is
+            successful.
 
     Returns:
         A JSONResponse object with the following fields:
@@ -460,13 +470,15 @@ async def activate(
     Activates user's account via the activation code.
 
     Note:
-        The activation code is generated by the `reissue_activation_code` method.
+        The activation code is generated by the `reissue_activation_code`
+            method.
 
     Args:
         activation_code: The activation code.
-        db: The database session object, which will be populated by the dependency injection
-            method `get_db_session` automatically.
-        status_code: The default status_code to be returned when the request is successful.
+        db: The database session object, which will be populated by the
+            dependency injection method `get_db_session` automatically.
+        status_code: The default status_code to be returned when the request is
+            successful.
 
     Returns:
         A JSONResponse object with the following fields:
@@ -508,11 +520,13 @@ async def promote(
 
     Args:
         public_id: The public ID of the user whom to be promoted.
-        user_info: The TokenBase object which contains user's info, is retrieved from decoding the access token.
-            The current user must be a superuser.
-        db: The database session object, which will be populated by the dependency injection
-            method `get_db_session` automatically.
-        status_code: The default status_code to be returned when the request is successful.
+        user_info: The TokenBase object which contains user's info, is retrieved
+            from decoding the access token. The current user must be a
+            superuser.
+        db: The database session object, which will be populated by the
+            dependency injection method `get_db_session` automatically.
+        status_code: The default status_code to be returned when the request
+            is successful.
 
     Returns:
         A JSONResponse object with the following fields:
@@ -528,7 +542,8 @@ async def promote(
         status_code=status_code,
         content={
             "status": "success" if result else "failed",
-            "message": "User promoted successfully." if result else "User promotion failed.",
+            "message": "User promoted successfully." if result
+            else "User promotion failed.",
         }
     )
 
@@ -544,9 +559,10 @@ async def generate_api_key(
 
     Args:
         email: The email of the user.
-        db: The database session object, which will be populated by the dependency injection
-            method `get_db_session` automatically.
-        status_code: The default status_code to be returned when the request is successful.
+        db: The database session object, which will be populated by the
+            dependency injection method `get_db_session` automatically.
+        status_code: The default status_code to be returned when the request
+            is successful.
 
     Returns:
         A JSONResponse object with the following fields:
@@ -582,9 +598,10 @@ async def has_registered(
 
     Args:
         email: The user's email address.
-        db: The database session object, which will be populated by the dependency injection
-            method `get_db_session` automatically.
-        status_code: The default status_code to be returned when the request is successful.
+        db: The database session object, which will be populated by the
+            dependency injection method `get_db_session` automatically.
+        status_code: The default status_code to be returned when the request
+            is successful.
 
     Returns:
         A JSONResponse object with the following fields:
