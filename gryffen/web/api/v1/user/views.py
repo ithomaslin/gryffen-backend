@@ -58,7 +58,6 @@ from gryffen.security import TokenBase
 router = APIRouter(prefix="/user")
 
 
-@private_method
 @router.post("/create", include_in_schema=False)
 async def create_user_via_json(
     request: UserCreationSchema,
@@ -72,12 +71,10 @@ async def create_user_via_json(
     Args:
         request: The request schema for creating a new user, request body should
             contain the following fields:
-                - email
-                - password
-                - register_via
-                - external_uid
-                - first_name
-                - last_name
+                - email: str
+                - password: str
+                - register_via: str
+                - external_uid: bool
         db: The database session object, which will be populated by the
             dependency injection method `get_db_session` automatically.
         status_code: The default status_code to be returned when the request is
@@ -118,7 +115,7 @@ async def create_user_via_json(
         content={
             "status": "success",
             "message": "User created.",
-            "data": {
+            "details": {
                 "user": jsonable_encoder(user),
                 "activation_code": activation_code,
                 "info": "Please activate your account within 15 minutes."
@@ -156,7 +153,10 @@ async def create_user_via_form(
             data: The data of the request.
     """
     submission = UserCreationSchema(
-        email=email, password=password, register_via=register_via
+        email=email,
+        password=password,
+        register_via=register_via,
+        external_uid=False
     )
     user_exists = await check_user_exist(email, db)
     if user_exists:
@@ -167,7 +167,7 @@ async def create_user_via_form(
 
     usr: User = await create_user(submission, db)
     activation_code: str = await create_activation_code(
-        usr.id, usr.username, usr.email, db
+        usr.public_id, usr.id, usr.email, db
     )
 
     mail_service = GriffinMailService()
@@ -181,7 +181,7 @@ async def create_user_via_form(
         content={
             "status": "success",
             "message": "User created.",
-            "data": {
+            "details": {
                 "user": jsonable_encoder(usr),
                 "activation_code": activation_code,
                 "info": "Please activate your account within 15 minutes."
@@ -190,7 +190,6 @@ async def create_user_via_form(
     )
 
 
-@private_method
 @router.post("/token-login", include_in_schema=False)
 async def login_for_oauth_token(
     form_data: security.OAuth2PasswordRequestForm = Depends(),
@@ -245,7 +244,7 @@ async def login_for_oauth_token(
         content={
             "status": "success",
             "message": "User logged in successfully.",
-            "data": {
+            "details": {
                 "user": jsonable_encoder(usr),
                 "token": token,
             }
@@ -282,8 +281,12 @@ async def social_login(
                 - user: The user object.
                 - token: The access token object.
     """
+    assert request.external_uid is True, "External UID must be true."
+
     try:
-        usr: User = await social_authenticate_user(request.email, request.external_uid, db)
+        usr: User = await social_authenticate_user(
+            request.email, request.password, db
+        )
     except HTTPException:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -303,7 +306,7 @@ async def social_login(
         content={
             "status": "success",
             "message": "User logged in successfully.",
-            "data": {
+            "details": {
                 "user": jsonable_encoder(usr),
                 "token": token,
             }
@@ -341,7 +344,7 @@ async def oauth_refresh(
         content={
             "status": "success",
             "message": "Token refreshed successfully.",
-            "data": {
+            "details": {
                 "token": token,
             }
         }
@@ -377,7 +380,7 @@ async def get_user(
         content={
             "status": "success",
             "message": "User fetched successfully.",
-            "data": {
+            "details": {
                 "user": jsonable_encoder(usr),
             }
         }
@@ -411,7 +414,7 @@ async def oauth_get_user(
         content={
             "status": "success",
             "message": "User fetched successfully.",
-            "data": {
+            "details": {
                 "user": jsonable_encoder(usr),
             }
         }
@@ -496,7 +499,7 @@ async def activate(
         content={
             "status": "success",
             "message": "User activated successfully.",
-            "data": {
+            "details": {
                 "email": email,
                 "public_id": public_id,
                 "access_token": access_token,
@@ -580,7 +583,7 @@ async def generate_api_key(
         content={
             "status": "success",
             "message": "API key generated successfully.",
-            "data": {
+            "details": {
                 "api_key": api_key
             }
         }
@@ -613,9 +616,12 @@ async def has_registered(
     """
     exists = await check_user_exist(email, db)
     return JSONResponse(
-        status_code=status_code if exists else status.HTTP_404_NOT_FOUND,
+        status_code=status_code,
         content={
-            "status": "success" if exists else "failed",
+            "status": "success",
             "message": "User exists." if exists else "User does not exist.",
+            "details": {
+                "user": exists
+            }
         }
     )

@@ -45,7 +45,7 @@ async def create_activation_code(
         str: The activation code object.
     """
     tb = TokenBase(email=email, public_id=public_id)
-    code = tb.encode()
+    code = tb.tokenize()
 
     activation_code = Activation(
         activation_code=code,

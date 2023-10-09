@@ -56,7 +56,6 @@ class Storage:
         self.credentials = os.getenv("SERVICE_ACCOUNT_JSON")
         self.storage_client = None
         self.bucket = None
-        self.init_storage()
 
     async def init_storage(self) -> None:
         """
@@ -68,11 +67,19 @@ class Storage:
         )
         # Creating the bucket if it does not exist
         if not self._is_bucket_exists(self.bucket_name):
-            logging.info(f"Storage client initialized, and bucket {self.bucket_name} does not exists. Creating bucket")
+            logging.info(
+                f"Storage client initialized, and bucket {self.bucket_name} "
+                f"does not exists. Creating bucket"
+            )
             _bucket = self.storage_client.bucket(self.bucket_name)
             _bucket.storage_class = 'STANDARD'
-            self.bucket = self.storage_client.create_bucket(_bucket, location='us-central1')
-            logging.info(f"Storage client initialized, and bucket {self.bucket.name} is successfully created.")
+            self.bucket = self.storage_client.create_bucket(
+                _bucket, location='us-central1'
+            )
+            logging.info(
+                f"Storage client initialized, and bucket {self.bucket.name} "
+                f"is successfully created."
+            )
 
     async def _is_bucket_exists(self, bucket_name) -> bool:
         """
@@ -215,7 +222,9 @@ class Storage:
         blob.download_to_filename(file_path)
         logging.info("File content set in storage.")
 
-    async def set_file_content_as_file(self, file_name: str, file_path: str) -> None:
+    async def set_file_content_as_file(
+        self, file_name: str, file_path: str
+    ) -> None:
         """
         Set file content as file in storage.
         """
@@ -223,14 +232,18 @@ class Storage:
         blob.upload_from_filename(file_path)
         logging.info("File content set in storage.")
 
-    async def get_file_content_as_file_object(self, file_name: str):
+    async def get_file_content_as_file_object(
+        self, file_name: str
+    ):
         """
         Get file content as file object from storage.
         """
         blob = self.bucket.get_blob(file_name)
         return blob.download_as_file_object()
 
-    async def set_file_content_as_file_object(self, file_name: str, file_object) -> None:
+    async def set_file_content_as_file_object(
+        self, file_name: str, file_object
+    ) -> None:
         """Set file content as file object in storage.
 
         Args:

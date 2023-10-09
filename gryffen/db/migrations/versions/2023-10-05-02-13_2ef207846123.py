@@ -1,15 +1,15 @@
 """empty message
 
-Revision ID: 07188504a597
+Revision ID: 2ef207846123
 Revises: 819cbf6e030b
-Create Date: 2023-10-03 23:26:42.071532
+Create Date: 2023-10-05 02:13:12.695836
 
 """
 import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "07188504a597"
+revision = "2ef207846123"
 down_revision = "819cbf6e030b"
 branch_labels = None
 depends_on = None
@@ -23,11 +23,11 @@ def upgrade() -> None:
         sa.Column("public_id", sa.String(length=50), nullable=False),
         sa.Column("username", sa.String(length=50), nullable=True),
         sa.Column("email", sa.String(length=100), nullable=False),
-        sa.Column("password", sa.LargeBinary(), nullable=False),
+        sa.Column("password", sa.LargeBinary(), nullable=True),
         sa.Column("first_name", sa.String(length=50), nullable=True),
         sa.Column("last_name", sa.String(length=50), nullable=True),
         sa.Column("register_via", sa.String(length=50), nullable=True),
-        sa.Column("external_uid", sa.LargeBinary(), nullable=True),
+        sa.Column("external_uid", sa.Boolean(), nullable=True),
         sa.Column("api_key", sa.String(length=1024), nullable=True),
         sa.Column("is_active", sa.Boolean(), nullable=False),
         sa.Column("tier", sa.Integer(), nullable=True),
@@ -80,7 +80,6 @@ def upgrade() -> None:
         sa.Column("symbol", sa.String(length=50), nullable=False),
         sa.Column("risk_level", sa.Integer(), nullable=False),
         sa.Column("risk_tolerance", sa.Integer(), nullable=False),
-        sa.Column("strategy_type", sa.Integer(), nullable=False),
         sa.Column(
             "principal_balance", sa.Numeric(precision=10, scale=4), nullable=False
         ),

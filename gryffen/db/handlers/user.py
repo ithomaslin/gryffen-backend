@@ -36,7 +36,6 @@ from gryffen.db.handlers.activation import verify_activation_code
 from gryffen.web.api.v1.user.schema import UserCreationSchema
 from gryffen.web.api.v1.user.schema import UserAuthenticationSchema
 from gryffen.settings import settings
-from gryffen.security import hashing
 from gryffen.security import TokenBase
 from gryffen.security import verify_password
 from gryffen.logging import logger
@@ -62,11 +61,11 @@ async def create_user(
     """
     user = User(
         email=submission.email,
-        password=hashing(submission.password),
+        password=submission.password,
         username=submission.email,
         public_id=str(uuid.uuid4()),
         register_via=submission.register_via,
-        external_uid=hashing(submission.external_uid),
+        external_uid=submission.external_uid,
         timestamp_created=datetime.utcnow(),
         timestamp_updated=datetime.utcnow(),
     )
@@ -74,7 +73,8 @@ async def create_user(
     await db.commit()
     await db.refresh(user)
 
-    Storage(bucket_name=submission.email)   # self initializing the bucket and its creation
+    storage = Storage(bucket_name=submission.email)
+    await storage.init_storage()
 
     logger.info(f"[{datetime.utcnow()}] User {user.username} created successfully.")
     return user
@@ -134,19 +134,20 @@ async def authenticate_user(
     if usr and verify_password(password, usr.password):
         return usr
     else:
+        print('Password is incorrect.')
         return None
 
 
 async def social_authenticate_user(
     email: str,
-    uid: str,
+    password: str,
     db: AsyncSession
 ) -> Optional[User]:
     """Third-party authentication function.
 
     Args:
         email: The user's email address.
-        uid: The user's external uid.
+        password: The user's external uid.
         db: The database session.
 
     Returns:
@@ -160,7 +161,7 @@ async def social_authenticate_user(
             detail="User not found."
         )
 
-    if usr and verify_password(uid, usr.external_uid):
+    if usr and verify_password(password, usr.password):
         return usr
     else:
         return None
@@ -417,9 +418,10 @@ async def oauth_create_token(
 
     return dict(
         access_token=access_token,
+        access_token_expires_in=int(settings.access_token_duration_minute),
         refresh_token=refresh_token,
-        expires_in=int(settings.oauth_token_duration_minute),
-        token_type="bearer"
+        refresh_expires_in=int(settings.oauth_token_duration_minute),
+        token_type="Bearer"
     )
 
 

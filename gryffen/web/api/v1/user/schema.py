@@ -28,11 +28,9 @@ class UserCreationSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     email: EmailStr
-    password: str | None
-    register_via: str | None
-    external_uid: str | None
-    first_name: str | None
-    last_name: str | None
+    password: str
+    register_via: str
+    external_uid: bool
     # In-class list to capture validation errors
     __errors: List = []
 
@@ -50,5 +48,5 @@ class UserAuthenticationSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     email: str
-    password: str | None
-    external_uid: str | None
+    password: str
+    external_uid: bool

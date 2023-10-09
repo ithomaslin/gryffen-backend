@@ -32,6 +32,7 @@ from gryffen.db.models.strategies import Strategy
 from gryffen.db.models.exchanges import Exchange
 from gryffen.db.models.credentials import Credential
 from gryffen.db.models.activations import Activation
+from gryffen.security import hashing
 
 
 class User(Base):
@@ -68,11 +69,11 @@ class User(Base):
     public_id: Mapped[str] = mapped_column(String(50), unique=True)
     username: Mapped[str] = mapped_column(String(50), unique=True, nullable=True)
     email: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
-    password: Mapped[str] = mapped_column(LargeBinary, nullable=False)
+    password: Mapped[str] = mapped_column(LargeBinary, nullable=True)
     first_name: Mapped[str] = mapped_column(String(50), nullable=True)
     last_name: Mapped[str] = mapped_column(String(50), nullable=True)
     register_via: Mapped[str] = mapped_column(String(50), nullable=True)
-    external_uid: Mapped[str] = mapped_column(LargeBinary, nullable=True)
+    external_uid: Mapped[str] = mapped_column(Boolean(), nullable=True)
     api_key: Mapped[str] = mapped_column(String(1024), nullable=True, default=None)
     is_active: Mapped[bool] = mapped_column(Boolean(), default=False)
     tier: Mapped[int] = mapped_column(Integer, nullable=True, default=0)
@@ -130,6 +131,8 @@ class User(Base):
         for key, value in kwargs.items():
             if hasattr(value, "__iter__") and not isinstance(value, str):
                 value = value[0]
+            if key == "password":
+                value = hashing(value)
             setattr(self, key, value)
 
     def __repr__(self):
